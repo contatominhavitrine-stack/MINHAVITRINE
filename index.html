@@ -316,6 +316,16 @@
     .carousel-track { display: flex; gap: 20px; width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .carousel-track::-webkit-scrollbar { display: none; }
     .carousel-track .listing-card { flex: 0 0 calc((100% - 60px) / 4); scroll-snap-align: start; }
+    @media (max-width: 900px) {
+      .carousel-track .listing-card { flex-basis: 46%; }
+      .cat-title { white-space: normal; }
+    }
+    @media (max-width: 680px) {
+      .carousel-track { gap: 14px; }
+      .carousel-track .listing-card { flex-basis: 78%; }
+      .cat-arrows { display: none; }
+      .cat-block { margin-bottom: 36px; }
+    }
     
     .listing-card { background: var(--surface-card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; transition: transform .22s, border-color .22s; cursor: pointer; display: flex; flex-direction: column; }
     .listing-card:hover { transform: translateY(-4px); border-color: var(--hover-line); }
