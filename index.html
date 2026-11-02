@@ -29,7 +29,7 @@
     if (lastErr || !appMod) throw lastErr || new Error("Não foi possível carregar o Firebase.");
     const { initializeApp } = appMod;
     const { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteUser, EmailAuthProvider, reauthenticateWithCredential } = authMod;
-    const { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, query, orderBy, deleteDoc, doc, serverTimestamp, where, updateDoc } = fsMod;
+    const { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, query, orderBy, deleteDoc, doc, serverTimestamp, where, updateDoc, deleteField } = fsMod;
 
     const firebaseConfig = {
       apiKey: "AIzaSyDXkbe7C34rlthOJeAHcepKc9GtOnjIg_g",
@@ -63,6 +63,7 @@
       updateProfile,
       where,
       updateDoc,
+      deleteField,
       sendPasswordResetEmail,
       deleteUser,
       EmailAuthProvider,
@@ -83,9 +84,25 @@
 
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
-          if (userDoc.exists()) {
-            profileData = { ...profileData, ...userDoc.data() };
+          const pub = userDoc.exists() ? userDoc.data() : {};
+          let priv = {};
+          try {
+            const pSnap = await getDoc(doc(db, "users", user.uid, "private", "contact"));
+            if (pSnap.exists()) priv = pSnap.data();
+          } catch (e2) { console.warn("Contato privado indisponível:", e2); }
+          // Migração: perfis antigos guardavam contato no documento público
+          const legacy = {};
+          ['phone', 'contactEmail', 'links'].forEach(k => { if (pub[k] !== undefined && priv[k] === undefined) legacy[k] = pub[k]; });
+          const hasLegacy = ['email', 'phone', 'contactEmail', 'links'].some(k => pub[k] !== undefined);
+          if (hasLegacy) {
+            try {
+              if (Object.keys(legacy).length) await setDoc(doc(db, "users", user.uid, "private", "contact"), { email: user.email, ...legacy }, { merge: true });
+              await setDoc(doc(db, "users", user.uid), { email: deleteField(), phone: deleteField(), contactEmail: deleteField(), links: deleteField() }, { merge: true });
+              priv = { ...legacy, ...priv };
+            } catch (e3) { console.warn("Migração de contato falhou:", e3); }
           }
+          const { email: _e, phone: _p, contactEmail: _c, links: _l, ...pubSafe } = pub;
+          profileData = { ...profileData, ...pubSafe, phone: priv.phone || '', contactEmail: priv.contactEmail || user.email, links: Array.isArray(priv.links) ? priv.links : [] };
         } catch (e) {
           console.error("Erro ao carregar perfil do Firestore:", e);
           if (window.showFirebaseProblem) window.showFirebaseProblem('carregar o perfil', e);
@@ -251,7 +268,7 @@
     .hero-art { position: relative; display: grid; place-items: center; }
     .mock-card { position: relative; width: min(320px, 95%); background: var(--surface); border: 1px solid var(--line); border-radius: 22px; padding: 14px; box-shadow: var(--shadow); transform: rotate(2deg); }
     .mock-photo { height: 200px; border-radius: 14px; overflow: hidden; background: var(--img-bg); position: relative; }
-    .mock-photo img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1); }
+    .mock-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .mock-info { padding: 12px 4px 2px; }
     .mock-author { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); margin-top: 8px; }
     .mock-author-img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
@@ -330,8 +347,13 @@
     .listing-card { background: var(--surface-card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; transition: transform .22s, border-color .22s; cursor: pointer; display: flex; flex-direction: column; }
     .listing-card:hover { transform: translateY(-4px); border-color: var(--hover-line); }
     .listing-image { aspect-ratio: 1 / 1; position: relative; background: var(--img-bg); overflow: hidden; }
-    .listing-image img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(1); transition: transform .4s ease, filter .4s ease; }
-    .listing-card:hover .listing-image img { transform: scale(1.04); filter: grayscale(0); }
+    .listing-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease, filter .4s ease; }
+    /* Efeito preto e branco só onde há mouse (computador). No celular as fotos ficam coloridas. */
+    @media (hover: hover) and (pointer: fine) {
+      .mock-photo img { filter: grayscale(1); }
+      .listing-image img { filter: grayscale(1); }
+      .listing-card:hover .listing-image img { transform: scale(1.04); filter: grayscale(0); }
+    }
     .listing-content { padding: 16px; flex: 1; display: flex; flex-direction: column; }
     .listing-title { margin: 6px 0; font-size: 1rem; line-height: 1.35; font-weight: 700; color: var(--white); }
     .listing-author { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: .78rem; }
@@ -385,6 +407,14 @@
     .policy-date { font-size: .8rem; color: var(--muted); font-weight: 600; }
     @media (max-width: 680px) { .policy-cards { grid-template-columns: 1fr; } .policy-card { min-height: 0; } }
     .modal-card.wide { width: min(480px, 100%); }
+    .contact-list { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+    .contact-item { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 9px 14px 9px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--white); font-size: .95rem; font-weight: 600; transition: border-color .15s, transform .15s; }
+    button.contact-item { width: 100%; text-align: left; font-family: inherit; cursor: pointer; }
+    .contact-item:hover, .contact-item:focus-visible { border-color: var(--white); transform: translateY(-1px); }
+    .contact-item .ci-icon { width: 36px; height: 36px; border-radius: 10px; background: var(--chip); display: grid; place-items: center; flex: none; }
+    .contact-item .ci-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .contact-item .ci-arrow { color: var(--muted); flex: none; }
+    .no-contact { color: var(--muted); font-size: .82rem; line-height: 1.5; margin: 0 0 10px; }
     .modal-card textarea, .modal-card select { width: 100%; }
     @media (max-width: 680px) { .legal-card { padding: 22px 18px; border-radius: 18px; } }
 
@@ -483,7 +513,13 @@
       .hero-grid { grid-template-columns: 1fr; gap: 28px; text-align: center; }
       .hero-copy { margin-inline: auto; }
       .hero-buttons { justify-content: center; }
-      .categories { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .categories {
+        display: flex; gap: 10px; overflow-x: auto; padding: 4px 2px 10px;
+        scroll-snap-type: x proximity; overscroll-behavior-x: contain;
+        scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      }
+      .categories::-webkit-scrollbar { display: none; }
+      .category { flex: 0 0 112px; scroll-snap-align: start; }
       .listings { grid-template-columns: repeat(2, 1fr); gap: 14px; }
       .creators-grid { grid-template-columns: repeat(2, 1fr); }
       .detail-grid { grid-template-columns: 1fr; }
@@ -501,7 +537,6 @@
       }
       .nav-links.show { display: flex; }
       .menu-toggle { display: block; }
-      .categories { grid-template-columns: repeat(2, 1fr); }
       .listings, .creators-grid { grid-template-columns: 1fr; }
       .wizard-card { padding: 20px 16px; margin: 16px 0; }
       .dashboard-grid { grid-template-columns: 1fr !important; }
@@ -519,7 +554,7 @@
         <span class="brand-mark">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         </span>
-        <span class="brand-text">vitrine<span>io</span></span>
+        <span class="brand-text">Vitrine <span>io</span></span>
       </a>
 
       <nav class="nav-links" id="navLinks">
@@ -824,7 +859,7 @@
                   </div>
                 </div>
               </div>
-              <p class="field-note">Atenção: o telefone, o e-mail de contato e os links aparecem para qualquer visitante, no seu perfil e nas suas publicações. Preencha só o que quiser tornar público.</p>
+              <p class="field-note">Telefone, e-mail de contato e links ficam em uma área separada do seu perfil e aparecem apenas, dentro do botão “Entrar em contato”, para visitantes que estiverem logados. Mesmo assim, qualquer pessoa logada poderá vê-los e copiá-los, então preencha só o que quiser compartilhar.</p>
 
               <button type="submit" class="btn btn-primary" style="width: 100%;">Salvar Perfil</button>
             </form>
@@ -1022,7 +1057,7 @@
           </ul>
 
           <h3>4. O que fica público</h3>
-          <p>Ficam visíveis a qualquer visitante: nome ou nome do projeto, foto, bio, publicações e, se você preencher, telefone, e-mail de contato e links. Quem vê esses dados pode copiá-los e usá-los. Prefira um e-mail e um telefone de trabalho, não os pessoais.</p>
+          <p>Ficam disponíveis a qualquer visitante: nome ou nome do projeto, foto, bio e publicações. Telefone, e-mail de contato e links ficam em área separada e só aparecem, dentro do botão “Entrar em contato”, para visitantes logados; ainda assim, qualquer pessoa logada pode abri-los e copiá-los. O e-mail de login não é exibido a ninguém. Prefira um e-mail e um telefone de trabalho, não os pessoais.</p>
 
           <h3>5. Com quem compartilhamos</h3>
           <ul>
@@ -1115,6 +1150,16 @@
           <button type="submit" class="btn btn-primary" style="flex: 1;">Inserir</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MODAL CONTATO DO CRIADOR -->
+  <div class="modal-overlay" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle" onclick="if(event.target===this) closeContactModal()">
+    <div class="modal-card wide">
+      <button type="button" class="modal-close" aria-label="Fechar" onclick="closeContactModal()">✕</button>
+      <h3 id="contactModalTitle" style="margin: 0 0 4px; color: var(--white);">Entrar em contato</h3>
+      <p id="contactModalSubtitle" style="color: var(--muted); font-size: .88rem; margin: 0;"></p>
+      <div class="contact-list" id="contactList"></div>
     </div>
   </div>
 
@@ -1636,7 +1681,7 @@
       return 'Erro ao ' + action + (code ? ' (' + code + ')' : '') + '.';
     }
 
-    const DEBUG_FIREBASE = true;
+    const DEBUG_FIREBASE = false;
 
     function showFirebaseProblem(action, err) {
       const code = (err && err.code) || 'sem-codigo';
@@ -1682,16 +1727,21 @@
     async function persistProfile(okMsg) {
       if (!currentUser || !currentUser.uid || !window.fbDb || !window.fbModules) return false;
       try {
-        await window.fbModules.setDoc(window.fbModules.doc(window.fbDb, "users", currentUser.uid), {
+        const M = window.fbModules;
+        await M.setDoc(M.doc(window.fbDb, "users", currentUser.uid), {
           name: currentUser.name,
-          email: currentUser.email,
           avatar: currentUser.avatar || '',
           bio: currentUser.bio || '',
+          email: M.deleteField(), phone: M.deleteField(), contactEmail: M.deleteField(), links: M.deleteField(),
+          updatedAt: M.serverTimestamp()
+        }, { merge: true });
+        await M.setDoc(M.doc(window.fbDb, "users", currentUser.uid, "private", "contact"), {
+          email: currentUser.email,
           phone: currentUser.phone || '',
           contactEmail: currentUser.contactEmail || currentUser.email,
-          links: Array.isArray(currentUser.links) ? currentUser.links.slice(0, 3) : [],
-          updatedAt: window.fbModules.serverTimestamp()
+          links: Array.isArray(currentUser.links) ? currentUser.links.slice(0, 3) : []
         }, { merge: true });
+        delete contactCache[currentUser.uid];
         showToast(okMsg);
         await fetchListingsFromFirestore();
         return true;
@@ -1723,8 +1773,13 @@
             item.userName = u.name || item.userName;
             item.userAvatar = u.avatar || '';
             item.userBio = u.bio || item.userBio || '';
-            item.userPhone = u.phone || '';
-            item.userContactEmail = u.contactEmail || u.email || item.userContactEmail || '';
+          }
+          if (!String(item.id).startsWith('mock_')) {
+            const leaked = item.userPhone !== undefined || item.userContactEmail !== undefined;
+            delete item.userPhone; delete item.userContactEmail;
+            if (leaked && me && item.userId === me.uid) {
+              window.fbModules.updateDoc(window.fbModules.doc(window.fbDb, "listings", item.id), { userPhone: window.fbModules.deleteField(), userContactEmail: window.fbModules.deleteField() }).catch(() => {});
+            }
           }
         });
 
@@ -1777,8 +1832,8 @@
               name: item.userName || 'Criador',
               avatar: item.userAvatar || '',
               bio: item.userBio || 'Criador independente cadastrado no portal.',
-              phone: item.userPhone || '',
-              contactEmail: item.userContactEmail || '',
+              phone: String(item.userId).startsWith('mock_') ? (item.userPhone || '') : '',
+              contactEmail: String(item.userId).startsWith('mock_') ? (item.userContactEmail || '') : '',
               links: []
             });
           }
@@ -1787,12 +1842,9 @@
         cloudUsers.forEach(u => {
           creatorsMap.set(u.uid, {
             uid: u.uid,
-            name: u.name || u.email,
+            name: u.name || 'Criador',
             avatar: u.avatar || '',
-            bio: u.bio || 'Criador autoral.',
-            phone: u.phone || '',
-            contactEmail: u.contactEmail || u.email,
-            links: Array.isArray(u.links) ? u.links : []
+            bio: u.bio || 'Criador autoral.'
           });
         });
 
@@ -1851,26 +1903,24 @@
         return;
       }
 
-      const coverPhoto = featuredItem.photos && featuredItem.photos[0] 
-        ? featuredItem.photos[0] 
-        : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80';
+      const coverPhoto = imgSrc(featuredItem.photos && featuredItem.photos[0]) || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80';
 
-      const avatarHTML = featuredItem.userAvatar 
-        ? `<img src="${featuredItem.userAvatar}" class="mock-author-img" alt="${featuredItem.userName}">`
-        : `<div class="mock-author-img" style="background:var(--white); color:var(--bg); font-size:.65rem; font-weight:800; display:grid; place-items:center;">${(featuredItem.userName || 'C').charAt(0)}</div>`;
+      const avatarHTML = imgSrc(featuredItem.userAvatar)
+        ? `<img src="${imgSrc(featuredItem.userAvatar)}" class="mock-author-img" alt="${esc(featuredItem.userName)}">`
+        : `<div class="mock-author-img" style="background:var(--white); color:var(--bg); font-size:.65rem; font-weight:800; display:grid; place-items:center;">${esc((featuredItem.userName || 'C').charAt(0))}</div>`;
 
-      const priceText = featuredItem.price ? `R$ ${featuredItem.price.toLocaleString('pt-BR')}` : 'Sob Consulta';
+      const priceText = Number(featuredItem.price) ? `R$ ${Number(featuredItem.price).toLocaleString('pt-BR')}` : 'Sob Consulta';
 
       heroContainer.innerHTML = `
-        <article class="mock-card" onclick="openDetail('${featuredItem.id}')" style="cursor: pointer;">
+        <article class="mock-card" onclick="openDetail('${idAttr(featuredItem.id)}')" style="cursor: pointer;">
           <div class="mock-photo">
-            <img src="${coverPhoto}" alt="${featuredItem.title}">
+            <img src="${coverPhoto}" alt="${esc(featuredItem.title)}">
           </div>
           <div class="mock-info">
-            <h3 style="margin:4px 0 4px; font-size:1.05rem; color:var(--white);">${featuredItem.title}</h3>
+            <h3 style="margin:4px 0 4px; font-size:1.05rem; color:var(--white);">${esc(featuredItem.title)}</h3>
             <div class="mock-author">
               ${avatarHTML}
-              <span>${featuredItem.userName || 'Criador'}</span>
+              <span>${esc(featuredItem.userName || 'Criador')}</span>
               <span style="margin-left:auto; font-weight:800; color:var(--white);">${priceText}</span>
             </div>
           </div>
@@ -1994,13 +2044,13 @@
       currentDetailItem = item;
 
       const detailImg = document.getElementById('detailPhoto');
-      detailImg.src = item.photos && item.photos[0] ? item.photos[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=900&q=80';
+      detailImg.src = imgSrc(item.photos && item.photos[0]) ? item.photos[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=900&q=80';
       detailImg.alt = item.title || '';
 
       document.getElementById('detailTitle').textContent = item.title;
       rteRenderDescription(document.getElementById('detailDescription'), item);
       document.getElementById('detailCategory').textContent = item.category;
-      document.getElementById('detailPrice').textContent = item.price ? 'R$ ' + item.price.toLocaleString('pt-BR') : 'Sob Consulta';
+      document.getElementById('detailPrice').textContent = Number(item.price) ? 'R$ ' + Number(item.price).toLocaleString('pt-BR') : 'Sob Consulta';
       
       document.getElementById('sellerName').textContent = item.userName || 'Criador';
       document.getElementById('sellerAvatarContainer').innerHTML = renderAvatarHTML(item.userAvatar, item.userName, 'seller-avatar');
@@ -2008,17 +2058,16 @@
       document.getElementById('detailSellerCard').onclick = () => openPublicProfile(item.userId);
 
       const contactButtons = document.getElementById('detailContactButtons');
-      contactButtons.innerHTML = '';
+      contactButtons.textContent = '';
+      renderContactButton(contactButtons, item.userId, item);
 
-      if (item.userPhone) {
-        const cleanPhone = item.userPhone.replace(/\D/g, '');
-        contactButtons.innerHTML += `<a href="https://wa.me/55${cleanPhone}" target="_blank" class="btn btn-primary" style="width: 100%; margin-bottom: 10px;">💬 Falar pelo WhatsApp</a>`;
-      }
-      if (item.userContactEmail || item.userId) {
-        const mail = item.userContactEmail || item.userId;
-        contactButtons.innerHTML += `<a href="mailto:${mail}" class="btn btn-outline" style="width: 100%; margin-bottom: 10px;">✉️ Enviar E-mail</a>`;
-      }
-      contactButtons.innerHTML += `<button class="btn btn-outline" style="width: 100%;" onclick="openReportModal('${item.id}')">Denunciar publicação</button>`;
+      const reportBtn = document.createElement('button');
+      reportBtn.type = 'button';
+      reportBtn.className = 'btn btn-outline';
+      reportBtn.style.width = '100%';
+      reportBtn.textContent = 'Denunciar publicação';
+      reportBtn.onclick = () => openReportModal(item.id);
+      contactButtons.appendChild(reportBtn);
 
       navigateTo('detail');
     }
@@ -2150,10 +2199,23 @@
       await persistProfile('Perfil salvo!');
     }
 
+    // Escapa texto vindo de usuários antes de colocar em HTML
+    function esc(v) {
+      return String(v == null ? '' : v).replace(/[&<>"'`]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[ch]));
+    }
+    // IDs usados dentro de onclick: só letras, números, _ e -
+    function idAttr(v) { return String(v == null ? '' : v).replace(/[^A-Za-z0-9_-]/g, ''); }
+    // URL de imagem: só https, data:image ou blob
+    function imgSrc(u) {
+      const t = String(u || '').trim();
+      return /^(https:\/\/|data:image\/(png|jpe?g|webp|gif);base64,)/i.test(t) ? esc(t) : '';
+    }
+
     function renderAvatarHTML(avatarUrl, name, cssClass = 'avatar-img') {
-      if (avatarUrl) return `<img src="${avatarUrl}" alt="${name}" class="${cssClass}">`;
-      const initial = (name || 'C').charAt(0).toUpperCase();
-      return `<div class="${cssClass}">${initial}</div>`;
+      const src = imgSrc(avatarUrl);
+      if (src) return `<img src="${src}" alt="${esc(name)}" class="${esc(cssClass)}">`;
+      const initial = esc((name || 'C').charAt(0).toUpperCase());
+      return `<div class="${esc(cssClass)}">${initial}</div>`;
     }
 
     function updateAuthUI() {
@@ -2221,14 +2283,14 @@
         
         await window.fbModules.setDoc(window.fbModules.doc(window.fbDb, "users", userCred.user.uid), {
           name: name,
-          email: email,
           avatar: tempRegAvatar || '',
           bio: '',
-          phone: '',
-          contactEmail: email,
           acceptedTermsVersion: LEGAL.version,
           acceptedTermsAt: window.fbModules.serverTimestamp(),
           createdAt: window.fbModules.serverTimestamp()
+        });
+        await window.fbModules.setDoc(window.fbModules.doc(window.fbDb, "users", userCred.user.uid, "private", "contact"), {
+          email: email, phone: '', contactEmail: email, links: []
         });
 
         await window.fbModules.updateProfile(userCred.user, { displayName: name });
@@ -2293,18 +2355,18 @@
         htmlCards += userItems.map(item => `
           <article class="listing-card" style="position: relative;">
             <div class="card-actions">
-              <button type="button" class="icon-btn danger" aria-label="Excluir publicação" title="Excluir" onclick="askDeleteListing('${item.id}')">
+              <button type="button" class="icon-btn danger" aria-label="Excluir publicação" title="Excluir" onclick="askDeleteListing('${idAttr(item.id)}')">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
               </button>
-              <button type="button" class="icon-btn" aria-label="Editar publicação" title="Editar" onclick="startEditListing('${item.id}')">
+              <button type="button" class="icon-btn" aria-label="Editar publicação" title="Editar" onclick="startEditListing('${idAttr(item.id)}')">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
               </button>
             </div>
-            <div class="listing-image" onclick="openDetail('${item.id}')">
-              <img src="${item.photos[0]}" alt="${item.title}">
+            <div class="listing-image" onclick="openDetail('${idAttr(item.id)}')">
+              <img src="${imgSrc(item.photos && item.photos[0])}" alt="${esc(item.title)}">
             </div>
             <div class="listing-content">
-              <h3 class="listing-title" onclick="openDetail('${item.id}')">${item.title}</h3>
+              <h3 class="listing-title" onclick="openDetail('${idAttr(item.id)}')">${esc(item.title)}</h3>
             </div>
           </article>
         `).join('');
@@ -2322,10 +2384,10 @@
       }
 
       grid.innerHTML = allCreators.map(c => `
-        <div class="creator-card" onclick="openPublicProfile('${c.uid}')">
+        <div class="creator-card" onclick="openPublicProfile('${idAttr(c.uid)}')">
           <div class="creator-avatar">${renderAvatarHTML(c.avatar, c.name, 'creator-avatar')}</div>
-          <h3 class="creator-name">${c.name}</h3>
-          <p class="creator-bio">${c.bio || 'Criador autoral participante do portal.'}</p>
+          <h3 class="creator-name">${esc(c.name)}</h3>
+          <p class="creator-bio">${esc(c.bio || 'Criador autoral participante do portal.')}</p>
           <div class="creator-meta">
             <span> Ver Perfil ↗</span>
           </div>
@@ -2342,9 +2404,7 @@
           name: currentDetailItem.userName || 'Criador',
           avatar: currentDetailItem.userAvatar || '',
           bio: currentDetailItem.userBio || 'Criador autoral participante do portal.',
-          phone: currentDetailItem.userPhone || '',
-          contactEmail: currentDetailItem.userContactEmail || '',
-          links: []
+          phone: '', contactEmail: '', links: []
         };
       }
 
@@ -2359,33 +2419,8 @@
 
       const contactsDiv = document.getElementById('pubProfContacts');
       contactsDiv.textContent = '';
-      const addContact = (icon, label, text, href) => {
-        const span = document.createElement('span');
-        span.append(icon + ' ' + label + ': ');
-        const a = document.createElement('a');
-        a.href = href;
-        a.textContent = text;
-        a.style.textDecoration = 'underline';
-        if (href.startsWith('https://')) { a.target = '_blank'; a.rel = 'noopener noreferrer'; }
-        span.appendChild(a);
-        contactsDiv.appendChild(span);
-      };
-      if (creator.phone) addContact('📱', 'WhatsApp', creator.phone, 'https://wa.me/55' + String(creator.phone).replace(/\D/g, ''));
-      if (creator.contactEmail) addContact('✉️', 'E-mail', creator.contactEmail, 'mailto:' + creator.contactEmail);
-
-      const linksDiv = document.getElementById('pubProfLinks');
-      linksDiv.textContent = '';
-      (Array.isArray(creator.links) ? creator.links : []).slice(0, 3).forEach(l => {
-        const url = safeUrl(l && l.url);
-        if (!url) return;
-        const a = document.createElement('a');
-        a.className = 'profile-link';
-        a.href = url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer nofollow ugc';
-        a.textContent = String((l && l.label) || linkHostLabel(url)).slice(0, 30) + ' ↗';
-        linksDiv.appendChild(a);
-      });
+      renderContactButton(contactsDiv, uid, null, creator);
+      document.getElementById('pubProfLinks').textContent = '';
 
       const creatorItems = listings.filter(i => i.userId === uid || i.userName === creator.name);
       const listingsDiv = document.getElementById('pubProfListings');
@@ -2402,18 +2437,19 @@
     const CATEGORY_ORDER = CATEGORIES.map(c => c.name);
 
     function listingCardHTML(item) {
-      const coverPhoto = item.photos && item.photos[0] ? item.photos[0] : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=700&q=80';
+      const coverPhoto = imgSrc(item.photos && item.photos[0]) || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=700&q=80';
+      const avatarSrc = imgSrc(item.userAvatar);
       return `
-        <article class="listing-card" onclick="openDetail('${item.id}')">
+        <article class="listing-card" onclick="openDetail('${idAttr(item.id)}')">
           <div class="listing-image">
-            <img src="${coverPhoto}" alt="${item.title}">
+            <img src="${coverPhoto}" alt="${esc(item.title)}">
           </div>
           <div class="listing-content">
-            <h3 class="listing-title">${item.title}</h3>
+            <h3 class="listing-title">${esc(item.title)}</h3>
             <div class="listing-author">
-              ${item.userAvatar ? `<img src="${item.userAvatar}">` : `<div class="listing-author-placeholder">${(item.userName||'C').charAt(0)}</div>`}
-              <span>${item.userName || 'Criador'}</span>
-              <span class="listing-price-tag">${item.price ? 'R$ ' + item.price.toLocaleString('pt-BR') : 'Consulta'}</span>
+              ${avatarSrc ? `<img src="${avatarSrc}" alt="">` : `<div class="listing-author-placeholder">${esc((item.userName||'C').charAt(0))}</div>`}
+              <span>${esc(item.userName || 'Criador')}</span>
+              <span class="listing-price-tag">${Number(item.price) ? 'R$ ' + Number(item.price).toLocaleString('pt-BR') : 'Consulta'}</span>
             </div>
           </div>
         </article>
@@ -2433,7 +2469,7 @@
         return `
           <section class="cat-block">
             <div class="cat-head">
-              <h3 class="cat-title">${cat}</h3>
+              <h3 class="cat-title">${esc(cat)}</h3>
               <span class="cat-line"></span>
               <div class="cat-arrows">
                 <button type="button" class="cat-arrow" aria-label="Anterior" onclick="scrollCategory(this, -1)">❮</button>
@@ -2475,8 +2511,6 @@
         userName: currentUser.name,
         userAvatar: currentUser.avatar || '',
         userBio: currentUser.bio || '',
-        userPhone: currentUser.phone || '',
-        userContactEmail: currentUser.contactEmail || currentUser.email,
         createdAt: window.fbModules.serverTimestamp()
       };
 
@@ -2493,7 +2527,7 @@
         rteSetHTML('');
         selectedFormPhotos = [];
         renderPhotoPreviews();
-        showToast('Publicado com sucesso no Firebase!');
+        showToast('Publicado com sucesso!');
         await fetchListingsFromFirestore();
         navigateTo('dashboard');
       } catch (err) {
@@ -2782,6 +2816,7 @@
         const q = M.query(M.collection(window.fbDb, 'listings'), M.where('userId', '==', user.uid));
         const snap = await M.getDocs(q);
         for (const d of snap.docs) { await M.deleteDoc(d.ref); }
+        try { await M.deleteDoc(M.doc(window.fbDb, 'users', user.uid, 'private', 'contact')); } catch (e4) { console.warn(e4); }
         await M.deleteDoc(M.doc(window.fbDb, 'users', user.uid));
         await M.deleteUser(user);
 
@@ -2808,8 +2843,121 @@
       }
     }
 
+    // ===== Contato do criador (lista com WhatsApp, e-mail e links) =====
+    const CONTACT_ICONS = {
+      whatsapp: '<path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z"/>',
+      email: '<rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/>',
+      link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>'
+    };
+
+    const contactCache = {};
+
+    // Contatos ficam em users/{uid}/private/contact e só quem está logado consegue ler.
+    async function getContactFor(uid, item, creatorOverride) {
+      const base = creatorOverride || allCreators.find(x => x.uid === uid) || profileCache[uid] || {};
+      const name = base.name || (item && item.userName) || 'Criador';
+      if (String(uid).startsWith('mock_')) {
+        return { name, phone: base.phone || (item && item.userPhone) || '', email: base.contactEmail || (item && item.userContactEmail) || '', links: [] };
+      }
+      if (currentUser && currentUser.uid === uid) {
+        return { name, phone: currentUser.phone || '', email: currentUser.contactEmail || currentUser.email || '', links: Array.isArray(currentUser.links) ? currentUser.links : [] };
+      }
+      if (!currentUser) return { name, needLogin: true };
+      if (!contactCache[uid]) {
+        try {
+          const snap = await window.fbModules.getDoc(window.fbModules.doc(window.fbDb, 'users', uid, 'private', 'contact'));
+          const d = snap.exists() ? snap.data() : {};
+          contactCache[uid] = { phone: d.phone || '', email: d.contactEmail || '', links: Array.isArray(d.links) ? d.links : [] };
+        } catch (e) {
+          console.error('Erro ao ler contato:', e);
+          return { name, error: true };
+        }
+      }
+      return { name, ...contactCache[uid] };
+    }
+
+    function buildContactEntries(d) {
+      const entries = [];
+      const digits = String(d.phone || '').replace(/\D/g, '');
+      if (digits.length >= 8) entries.push({ type: 'whatsapp', label: 'WhatsApp', href: 'https://wa.me/55' + digits, external: true });
+      if (d.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) entries.push({ type: 'email', label: 'E-mail', href: 'mailto:' + d.email, external: false });
+      (d.links || []).slice(0, 3).forEach(l => {
+        const url = safeUrl(l && l.url);
+        if (url) entries.push({ type: 'link', label: String((l && l.label) || linkHostLabel(url)).slice(0, 30), href: url, external: true });
+      });
+      return entries;
+    }
+
+    function renderContactButton(container, uid, item, creatorOverride) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-primary';
+      btn.style.width = '100%';
+      btn.style.marginBottom = '10px';
+      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONTACT_ICONS.whatsapp + '</svg> <span>Entrar em contato</span>';
+      btn.onclick = () => openContactModal(uid, item, creatorOverride);
+      container.appendChild(btn);
+    }
+
+    function contactMessage(list, text, withLogin) {
+      const p = document.createElement('p');
+      p.className = 'no-contact';
+      p.textContent = text;
+      list.appendChild(p);
+      if (withLogin) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn btn-primary';
+        b.style.width = '100%';
+        b.textContent = 'Entrar ou criar perfil';
+        b.onclick = () => { closeContactModal(); openAuthModal('login'); };
+        list.appendChild(b);
+      }
+    }
+
+    async function openContactModal(uid, item, creatorOverride) {
+      const list = document.getElementById('contactList');
+      list.textContent = '';
+      document.getElementById('contactModalSubtitle').textContent = 'Carregando...';
+      document.getElementById('contactModal').classList.add('show');
+      const data = await getContactFor(uid, item, creatorOverride);
+      document.getElementById('contactModalSubtitle').textContent = 'Fale com ' + data.name;
+      list.textContent = '';
+      if (data.needLogin) { contactMessage(list, 'Para proteger os criadores contra spam e golpes, os contatos só aparecem para quem está logado.', true); return; }
+      if (data.error) { contactMessage(list, 'Não foi possível carregar os contatos agora. Tente de novo em instantes.'); return; }
+      const entries = buildContactEntries(data);
+      if (!entries.length) { contactMessage(list, 'Este criador ainda não informou formas de contato.'); return; }
+      entries.forEach(en => {
+        // Botão (e não link) para o endereço não aparecer no rodapé do navegador ao passar o mouse
+        const a = document.createElement('button');
+        a.type = 'button';
+        a.className = 'contact-item';
+        a.onclick = () => {
+          if (en.external) window.open(en.href, '_blank', 'noopener,noreferrer');
+          else window.location.href = en.href;
+        };
+        const icon = document.createElement('span');
+        icon.className = 'ci-icon';
+        icon.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + CONTACT_ICONS[en.type] + '</svg>';
+        const label = document.createElement('span');
+        label.className = 'ci-label';
+        label.textContent = en.label;
+        const arrow = document.createElement('span');
+        arrow.className = 'ci-arrow';
+        arrow.setAttribute('aria-hidden', 'true');
+        arrow.textContent = '↗';
+        a.append(icon, label, arrow);
+        list.appendChild(a);
+      });
+    }
+
+    function closeContactModal() {
+      document.getElementById('contactModal').classList.remove('show');
+    }
+
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
+      closeContactModal();
       closeReportModal();
       closeDeleteAccountModal();
       closeLinkModal();
