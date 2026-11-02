@@ -183,6 +183,12 @@
     button, a { -webkit-tap-highlight-color: transparent; }
     a { color: inherit; text-decoration: none; }
     .container { width: min(1160px, calc(100% - 32px)); margin-inline: auto; }
+    @media (min-width: 1200px) { .container { width: min(1560px, calc(100% - 96px)); } }
+    @media (min-width: 1500px) {
+      .carousel-track .listing-card { flex-basis: calc((100% - 80px) / 5); }
+      .listings { grid-template-columns: repeat(5, 1fr); }
+      .creators-grid { grid-template-columns: repeat(4, 1fr); }
+    }
 
     /* ===== Proteção contra Cópia / Download de Imagens ===== */
     img {
@@ -403,6 +409,8 @@
     .tag-add input { flex: 1; min-width: 0; }
     .tag-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
     .tag-pills:empty { display: none; }
+    .tag-removable { cursor: pointer; font-family: inherit; }
+    .tag-removable:hover { border-color: var(--white); }
     .tag-pill { border: 1px solid var(--line); background: var(--chip); color: var(--white); border-radius: 999px; padding: 5px 12px; font-size: .78rem; font-weight: 600; }
     .link-row { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
     .profile-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
@@ -433,6 +441,12 @@
     .forgot-link { display: block; margin: -6px 0 6px auto; background: none; border: 0; padding: 6px 0; color: var(--muted); font-size: .8rem; font-weight: 600; cursor: pointer; text-decoration: underline; }
     .forgot-link:hover { color: var(--white); }
 
+    #userListingsGrid.my-listings { grid-template-columns: repeat(auto-fill, minmax(150px, 190px)); gap: 14px; }
+    .my-listings .listing-card { border-radius: 14px; }
+    .my-listings .listing-content { padding: 10px 12px; }
+    .my-listings .listing-title { font-size: .85rem; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .my-listings .add-listing-card { min-height: 0; aspect-ratio: 1 / 1.25; border-radius: 14px; }
+    .my-listings .icon-btn { width: 30px; height: 30px; }
     .add-listing-card {
       background: transparent;
       border: 2px dashed var(--line);
@@ -742,6 +756,7 @@
                 </div>
               </div>
 
+              <div class="tag-pills" id="detailTags" style="margin: 0 0 14px;"></div>
               <div id="detailContactButtons"></div>
             </div>
           </div>
@@ -848,11 +863,8 @@
 
               <div class="form-group">
                 <label>Tags do perfil <span style="color: var(--muted); font-size: 0.75rem; font-weight: normal;">(até 8)</span></label>
-                <div class="tag-list" id="tagEditor"></div>
-                <div class="tag-add">
-                  <input type="text" id="tagCustomInput" maxlength="25" placeholder="Criar sua própria tag (ex: Prazo de 15 dias)" aria-label="Criar tag">
-                  <button type="button" class="btn btn-outline" onclick="addCustomTag()">Adicionar</button>
-                </div>
+                <div class="tag-pills" id="tagSelected"></div>
+                <button type="button" class="btn btn-outline" style="margin-top: 10px;" onclick="openTagsModal()">＋ Adicionar tags</button>
               </div>
 
               <div class="form-group">
@@ -894,7 +906,7 @@
 
           <div>
             <h3>Suas Exposições Ativas</h3>
-            <div id="userListingsGrid" class="listings" style="grid-template-columns: repeat(2, 1fr); margin-top: 16px;"></div>
+            <div id="userListingsGrid" class="listings my-listings" style="margin-top: 16px;"></div>
           </div>
         </div>
       </div>
@@ -1183,6 +1195,21 @@
       <p id="contactModalSubtitle" style="color: var(--muted); font-size: .88rem; margin: 0;"></p>
       <div class="tag-pills" id="contactTags"></div>
       <div class="contact-list" id="contactList"></div>
+    </div>
+  </div>
+
+  <!-- MODAL TAGS -->
+  <div class="modal-overlay" id="tagsModal" role="dialog" aria-modal="true" aria-labelledby="tagsModalTitle" onclick="if(event.target===this) closeTagsModal()">
+    <div class="modal-card wide">
+      <button type="button" class="modal-close" aria-label="Fechar" onclick="closeTagsModal()">✕</button>
+      <h3 id="tagsModalTitle" style="margin: 0 0 4px; color: var(--white);">Tags do perfil</h3>
+      <p id="tagsModalCount" style="color: var(--muted); font-size: .88rem; margin: 0 0 14px;"></p>
+      <div class="tag-list" id="tagEditor"></div>
+      <div class="tag-add">
+        <input type="text" id="tagCustomInput" maxlength="25" placeholder="Criar sua própria tag (ex: Prazo de 15 dias)" aria-label="Criar tag">
+        <button type="button" class="btn btn-outline" onclick="addCustomTag()">Criar</button>
+      </div>
+      <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 16px;" onclick="closeTagsModal()">Concluído</button>
     </div>
   </div>
 
@@ -2082,6 +2109,9 @@
 
       document.getElementById('detailSellerCard').onclick = () => openPublicProfile(item.userId);
 
+      const tagOwner = (currentUser && currentUser.uid === item.userId) ? currentUser : (allCreators.find(x => x.uid === item.userId) || profileCache[item.userId] || {});
+      fillTagPills(document.getElementById('detailTags'), tagOwner.tags);
+
       const contactButtons = document.getElementById('detailContactButtons');
       contactButtons.textContent = '';
       renderContactButton(contactButtons, item.userId, item);
@@ -2891,7 +2921,28 @@
       return out;
     }
 
+    function openTagsModal() { renderTagEditor(); document.getElementById('tagsModal').classList.add('show'); }
+    function closeTagsModal() { document.getElementById('tagsModal').classList.remove('show'); }
+
+    function renderTagSummary() {
+      const box = document.getElementById('tagSelected');
+      if (!box) return;
+      box.textContent = '';
+      editTags.forEach(t => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tag-pill tag-removable';
+        b.textContent = t + ' ✕';
+        b.setAttribute('aria-label', 'Remover tag ' + t);
+        b.onclick = () => toggleTag(t);
+        box.appendChild(b);
+      });
+    }
+
     function renderTagEditor() {
+      renderTagSummary();
+      const cnt = document.getElementById('tagsModalCount');
+      if (cnt) cnt.textContent = editTags.length + ' de ' + MAX_TAGS + ' tags escolhidas';
       const box = document.getElementById('tagEditor');
       if (!box) return;
       box.textContent = '';
@@ -3058,6 +3109,7 @@
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       closeContactModal();
+      closeTagsModal();
       closeReportModal();
       closeDeleteAccountModal();
       closeLinkModal();
