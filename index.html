@@ -208,7 +208,9 @@
     
     /* Logo com "vitrine" em negrito e "io" em fonte normal */
     .brand { display: inline-flex; align-items: center; gap: 10px; font-size: 1.15rem; color: var(--white); cursor: pointer; }
-    .brand-text { font-weight: 850; letter-spacing: -.04em; }
+    @media (max-width: 430px) { .nav { gap: 8px; } .nav-actions { gap: 6px; } .brand { gap: 8px; font-size: 1.05rem; } .login-btn { padding: 0 2px; } }
+    @media (max-width: 380px) { .nav-actions .btn { padding: 9px 10px; font-size: .78rem; } .brand { gap: 6px; font-size: .95rem; } .brand-mark { width: 30px; height: 30px; border-radius: 9px; } .theme-btn { width: 34px; height: 34px; } .login-btn { font-size: .8rem; } #authGuest { gap: 2px !important; } .nav-actions { gap: 4px; } .nav { gap: 6px; } .menu-toggle { padding: 0 2px; } }
+    .brand-text { font-weight: 850; letter-spacing: -.04em; white-space: nowrap; }
     .brand-text span { font-weight: 400; opacity: 0.9; }
     .brand-mark {
       width: 36px; height: 36px; display: grid; place-items: center;
@@ -392,6 +394,16 @@
     .link-muted:hover { color: var(--white); }
     .rich-content a { color: var(--white); text-decoration: underline; text-underline-offset: 3px; word-break: break-word; }
     .link-rows { display: flex; flex-direction: column; gap: 8px; }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-chip { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 999px; padding: 7px 13px; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .tag-chip:hover { border-color: var(--white); }
+    .tag-chip.selected { background: var(--white); color: var(--bg); border-color: var(--white); }
+    .tag-chip.custom.selected::after { content: ' ✕'; opacity: .6; }
+    .tag-add { display: flex; gap: 8px; margin-top: 10px; }
+    .tag-add input { flex: 1; min-width: 0; }
+    .tag-pills { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+    .tag-pills:empty { display: none; }
+    .tag-pill { border: 1px solid var(--line); background: var(--chip); color: var(--white); border-radius: 999px; padding: 5px 12px; font-size: .78rem; font-weight: 600; }
     .link-row { display: flex; flex-direction: column; gap: 6px; padding: 10px; border: 1px solid var(--line); border-radius: 12px; }
     .profile-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
     .profile-link { display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--white); font-size: .85rem; font-weight: 600; transition: border-color .15s; }
@@ -689,6 +701,7 @@
             <div>
               <h2 id="pubProfName" style="margin: 0; font-size: 1.8rem; color: var(--white);">Nome do Criador</h2>
               <p id="pubProfBio" style="color: var(--muted); margin: 8px 0; max-width: 600px;"></p>
+              <div id="pubProfTags" class="tag-pills"></div>
               <div id="pubProfContacts" style="display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; font-size: .88rem; color: var(--text);"></div>
               <div id="pubProfLinks" class="profile-links"></div>
             </div>
@@ -823,14 +836,23 @@
 
             <form onsubmit="saveUserProfile(event)">
               <div class="form-group">
-                <label>Foto de Perfil <span style="color: var(--muted); font-size: 0.75rem; font-weight: normal;">(Máximo 1 MB)</span></label>
+                <label>Foto de Perfil</label>
                 <input type="file" id="profileAvatarFileInput" accept="image/*" style="display: none;" onchange="handleProfileAvatarSelected(event)">
-                <button type="button" class="btn btn-outline" style="width: 100%;" onclick="document.getElementById('profileAvatarFileInput').click()">Alterar Foto (Máx 1MB)</button>
+                <button type="button" class="btn btn-outline" style="width: 100%;" onclick="document.getElementById('profileAvatarFileInput').click()">Alterar Foto</button>
               </div>
 
               <div class="form-group">
                 <label>Bio / Apresentação</label>
                 <textarea id="editBio" class="autogrow" rows="3" placeholder="Escreva um breve resumo sobre você ou seu projeto..."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label>Tags do perfil <span style="color: var(--muted); font-size: 0.75rem; font-weight: normal;">(até 8)</span></label>
+                <div class="tag-list" id="tagEditor"></div>
+                <div class="tag-add">
+                  <input type="text" id="tagCustomInput" maxlength="25" placeholder="Criar sua própria tag (ex: Prazo de 15 dias)" aria-label="Criar tag">
+                  <button type="button" class="btn btn-outline" onclick="addCustomTag()">Adicionar</button>
+                </div>
               </div>
 
               <div class="form-group">
@@ -860,7 +882,6 @@
                   </div>
                 </div>
               </div>
-              <p class="field-note">Telefone, e-mail de contato e links ficam em uma área separada do seu perfil e aparecem apenas, dentro do botão “Entrar em contato”, para visitantes que estiverem logados. Mesmo assim, qualquer pessoa logada poderá vê-los e copiá-los, então preencha só o que quiser compartilhar.</p>
 
               <button type="submit" class="btn btn-primary" style="width: 100%;">Salvar Perfil</button>
             </form>
@@ -894,6 +915,7 @@
           <h3>2. O que a plataforma faz e o que não faz</h3>
           <ul>
             <li>Oferecemos um espaço para exibir criações e permitir que o público encontre e contate quem as fez.</li>
+            <li>As condições informadas nas tags do perfil (como pagamento adiantado, prazos e envio) são declarações de cada criador e não são verificadas por nós. Combine tudo diretamente com o criador.</li>
             <li>Não vendemos produtos nem serviços, não intermediamos pagamentos e não cobramos comissão.</li>
             <li>Qualquer conversa, combinação ou negócio acontece diretamente entre as pessoas, por conta e risco delas.</li>
             <li>Não verificamos previamente cada publicação nem garantimos a qualidade, a legalidade ou a veracidade do que é anunciado.</li>
@@ -1058,7 +1080,7 @@
           </ul>
 
           <h3>4. O que fica público</h3>
-          <p>Ficam disponíveis a qualquer visitante: nome ou nome do projeto, foto, bio e publicações. Telefone, e-mail de contato e links ficam em área separada e só aparecem, dentro do botão “Entrar em contato”, para visitantes logados; ainda assim, qualquer pessoa logada pode abri-los e copiá-los. O e-mail de login não é exibido a ninguém. Prefira um e-mail e um telefone de trabalho, não os pessoais.</p>
+          <p>Ficam disponíveis a qualquer visitante: nome ou nome do projeto, foto, bio, tags de condições (como forma de pagamento) e publicações. Telefone, e-mail de contato e links ficam em área separada e só aparecem, dentro do botão “Entrar em contato”, para visitantes logados; ainda assim, qualquer pessoa logada pode abri-los e copiá-los. O e-mail de login não é exibido a ninguém. Prefira um e-mail e um telefone de trabalho, não os pessoais.</p>
 
           <h3>5. Com quem compartilhamos</h3>
           <ul>
@@ -1145,7 +1167,6 @@
           <label for="linkUrl">Endereço (URL)</label>
           <input type="text" id="linkUrl" inputmode="url" autocomplete="off" required placeholder="https://seusite.com">
         </div>
-        <p class="field-note">São aceitos apenas endereços http ou https. Links para golpes, vírus ou conteúdo ilegal não são permitidos.</p>
         <div style="display: flex; gap: 10px;">
           <button type="button" class="btn btn-outline" style="flex: 1;" onclick="closeLinkModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary" style="flex: 1;">Inserir</button>
@@ -1160,6 +1181,7 @@
       <button type="button" class="modal-close" aria-label="Fechar" onclick="closeContactModal()">✕</button>
       <h3 id="contactModalTitle" style="margin: 0 0 4px; color: var(--white);">Entrar em contato</h3>
       <p id="contactModalSubtitle" style="color: var(--muted); font-size: .88rem; margin: 0;"></p>
+      <div class="tag-pills" id="contactTags"></div>
       <div class="contact-list" id="contactList"></div>
     </div>
   </div>
@@ -1247,7 +1269,7 @@
           <input type="text" id="regName" required placeholder="Ex: Clara Mendes">
         </div>
         <div class="form-group">
-          <label>Foto de Perfil / Logo <span style="color: var(--muted); font-size: 0.75rem; font-weight: normal;">(Máx 1 MB)</span></label>
+          <label>Foto de Perfil / Logo</label>
           <input type="file" id="regAvatarFileInput" accept="image/*" style="display: none;" onchange="handleRegAvatarSelected(event)">
           <button type="button" class="btn btn-outline" style="width: 100%;" onclick="document.getElementById('regAvatarFileInput').click()">Selecionar Foto (Máx 1MB)</button>
           <div id="regAvatarPreview" style="margin-top: 8px; text-align: center;"></div>
@@ -1733,6 +1755,7 @@
           name: currentUser.name,
           avatar: currentUser.avatar || '',
           bio: currentUser.bio || '',
+          tags: cleanTags(currentUser.tags),
           email: M.deleteField(), phone: M.deleteField(), contactEmail: M.deleteField(), links: M.deleteField(),
           updatedAt: M.serverTimestamp()
         }, { merge: true });
@@ -1845,7 +1868,8 @@
             uid: u.uid,
             name: u.name || 'Criador',
             avatar: u.avatar || '',
-            bio: u.bio || 'Criador autoral.'
+            bio: u.bio || 'Criador autoral.',
+            tags: cleanTags(u.tags)
           });
         });
 
@@ -2193,6 +2217,7 @@
       if (linkResult.error) { showToast(linkResult.error); return; }
       currentUser.links = linkResult.links;
       currentUser.bio = document.getElementById('editBio').value;
+      currentUser.tags = cleanTags(editTags);
       currentUser.phone = document.getElementById('editPhone').value;
       currentUser.contactEmail = document.getElementById('editContactEmail').value;
       window.currentUser = currentUser;
@@ -2333,6 +2358,8 @@
       document.getElementById('profileAvatarBig').innerHTML = renderAvatarHTML(currentUser.avatar, currentUser.name, 'creator-avatar');
 
       document.getElementById('editBio').value = currentUser.bio || ''; setTimeout(() => resetAutoGrow('editBio'), 0);
+      editTags = cleanTags(currentUser.tags);
+      renderTagEditor();
       document.getElementById('editPhone').value = currentUser.phone || '';
       document.getElementById('editContactEmail').value = currentUser.contactEmail || currentUser.email || '';
       const myLinks = Array.isArray(currentUser.links) ? currentUser.links : [];
@@ -2418,6 +2445,7 @@
       document.getElementById('pubProfBio').textContent = creator.bio || 'Sem bio cadastrada.';
       document.getElementById('pubProfAvatar').innerHTML = renderAvatarHTML(creator.avatar, creator.name, 'creator-avatar');
 
+      fillTagPills(document.getElementById('pubProfTags'), creator.tags);
       const contactsDiv = document.getElementById('pubProfContacts');
       contactsDiv.textContent = '';
       renderContactButton(contactsDiv, uid, null, creator);
@@ -2849,6 +2877,69 @@
     document.addEventListener('input', (e) => { if (e.target.classList && e.target.classList.contains('autogrow')) autoGrow(e.target); });
     function resetAutoGrow(id) { const el = document.getElementById(id); if (el) { el.style.height = 'auto'; autoGrow(el); } }
 
+    // ===== Tags do perfil =====
+    const PRESET_TAGS = ['50% adiantado', '100% adiantado', 'Paga na entrega', 'Aceita parcelar', 'Aceita PIX', 'Aceita encomendas', 'Encomendas fechadas', 'Orçamento grátis', 'Sob consulta', 'Faz envio', 'Só presencial', 'Atende online'];
+    const MAX_TAGS = 8;
+    let editTags = [];
+
+    function cleanTags(arr) {
+      const out = [];
+      (Array.isArray(arr) ? arr : []).forEach(t => {
+        const v = String(t || '').replace(/\s+/g, ' ').trim().slice(0, 25);
+        if (v && !out.some(x => x.toLowerCase() === v.toLowerCase()) && out.length < MAX_TAGS) out.push(v);
+      });
+      return out;
+    }
+
+    function renderTagEditor() {
+      const box = document.getElementById('tagEditor');
+      if (!box) return;
+      box.textContent = '';
+      const customs = editTags.filter(t => !PRESET_TAGS.some(p => p.toLowerCase() === t.toLowerCase()));
+      PRESET_TAGS.map(t => ({ t, custom: false })).concat(customs.map(t => ({ t, custom: true }))).forEach(({ t, custom }) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'tag-chip' + (custom ? ' custom' : '') + (editTags.some(x => x.toLowerCase() === t.toLowerCase()) ? ' selected' : '');
+        b.textContent = t;
+        b.setAttribute('aria-pressed', b.classList.contains('selected') ? 'true' : 'false');
+        b.onclick = () => toggleTag(t);
+        box.appendChild(b);
+      });
+    }
+
+    function toggleTag(t) {
+      const i = editTags.findIndex(x => x.toLowerCase() === t.toLowerCase());
+      if (i >= 0) editTags.splice(i, 1);
+      else if (editTags.length >= MAX_TAGS) { showToast('Você pode ter até ' + MAX_TAGS + ' tags.'); return; }
+      else editTags.push(t);
+      renderTagEditor();
+    }
+
+    function addCustomTag() {
+      const input = document.getElementById('tagCustomInput');
+      const v = cleanTags([input.value])[0];
+      if (!v) return;
+      if (editTags.some(x => x.toLowerCase() === v.toLowerCase())) { input.value = ''; return; }
+      if (editTags.length >= MAX_TAGS) { showToast('Você pode ter até ' + MAX_TAGS + ' tags.'); return; }
+      editTags.push(v);
+      input.value = '';
+      renderTagEditor();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target && e.target.id === 'tagCustomInput') { e.preventDefault(); addCustomTag(); }
+    });
+
+    function fillTagPills(container, tags) {
+      container.textContent = '';
+      cleanTags(tags).forEach(t => {
+        const span = document.createElement('span');
+        span.className = 'tag-pill';
+        span.textContent = t;
+        container.appendChild(span);
+      });
+    }
+
     // ===== Contato do criador (lista com WhatsApp, e-mail e links) =====
     const CONTACT_ICONS = {
       whatsapp: '<path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.7-5.4A8.4 8.4 0 1 1 21 11.5z"/>',
@@ -2924,11 +3015,14 @@
     async function openContactModal(uid, item, creatorOverride) {
       const list = document.getElementById('contactList');
       list.textContent = '';
+      document.getElementById('contactTags').textContent = '';
       document.getElementById('contactModalSubtitle').textContent = 'Carregando...';
       document.getElementById('contactModal').classList.add('show');
       const data = await getContactFor(uid, item, creatorOverride);
       document.getElementById('contactModalSubtitle').textContent = 'Fale com ' + data.name;
       list.textContent = '';
+      const tagSrc = (currentUser && currentUser.uid === uid) ? currentUser : (allCreators.find(x => x.uid === uid) || profileCache[uid] || creatorOverride || {});
+      fillTagPills(document.getElementById('contactTags'), tagSrc.tags);
       if (data.needLogin) { contactMessage(list, 'Para proteger os criadores contra spam e golpes, os contatos só aparecem para quem está logado.', true); return; }
       if (data.error) { contactMessage(list, 'Não foi possível carregar os contatos agora. Tente de novo em instantes.'); return; }
       const entries = buildContactEntries(data);
