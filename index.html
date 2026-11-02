@@ -184,9 +184,13 @@
     a { color: inherit; text-decoration: none; }
     .container { width: min(1160px, calc(100% - 32px)); margin-inline: auto; }
     @media (min-width: 1200px) { .container { width: min(1560px, calc(100% - 96px)); } }
-    @media (min-width: 1500px) {
+    @media (min-width: 1200px) {
       .carousel-track .listing-card { flex-basis: calc((100% - 80px) / 5); }
       .listings { grid-template-columns: repeat(5, 1fr); }
+    }
+    @media (min-width: 1500px) {
+      .carousel-track .listing-card { flex-basis: calc((100% - 100px) / 6); }
+      .listings { grid-template-columns: repeat(6, 1fr); }
       .creators-grid { grid-template-columns: repeat(4, 1fr); }
     }
 
@@ -400,6 +404,13 @@
     .link-muted:hover { color: var(--white); }
     .rich-content a { color: var(--white); text-decoration: underline; text-underline-offset: 3px; word-break: break-word; }
     .link-rows { display: flex; flex-direction: column; gap: 8px; }
+    .rep-item { border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .rep-item.resolved { opacity: .6; }
+    .rep-top { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .rep-reason { background: var(--white); color: var(--bg); border-radius: 999px; padding: 3px 11px; font-size: .75rem; font-weight: 800; }
+    .rep-meta { color: var(--muted); font-size: .8rem; }
+    .rep-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+    .rep-actions .btn { padding: 8px 14px; font-size: .82rem; }
     .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
     .tag-chip { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 999px; padding: 7px 13px; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s; }
     .tag-chip:hover { border-color: var(--white); }
@@ -610,6 +621,7 @@
           <div class="dropdown-menu" id="userDropdown">
             <div class="dropdown-item" onclick="navigateTo('dashboard'); closeUserMenu();">Meu Perfil & Exposições</div>
             <div class="dropdown-item" onclick="navigateTo('publish'); closeUserMenu();">Nova Publicação</div>
+            <div class="dropdown-item" id="adminMenuItem" style="display: none;" onclick="navigateTo('admin'); closeUserMenu();">Painel de denúncias</div>
             <div class="dropdown-divider"></div>
             <div class="dropdown-item" onclick="logout(); closeUserMenu();">Sair</div>
           </div>
@@ -746,7 +758,7 @@
           <div>
             <div class="detail-sidebar-card">
               <span id="detailCategory" class="listing-category" style="font-size: .75rem;">Categoria</span>
-              <div id="detailPrice" class="listing-price" style="font-size: 1.7rem; margin: 6px 0 18px 0; font-weight:850; color:var(--white);">R$ 0,00</div>
+              <div style="height: 14px;"></div>
 
               <div class="seller-profile-card" id="detailSellerCard">
                 <div id="sellerAvatarContainer"></div>
@@ -781,10 +793,6 @@
               <select id="pubCategory" required>
                 <option value="">Selecione...</option>
               </select>
-            </div>
-            <div class="form-group">
-              <label>Valor / Preço Estimado (R$)</label>
-              <input type="number" id="pubPrice" placeholder="Deixe em branco se for sob consulta ou gratuito">
             </div>
 
             <div class="form-group">
@@ -913,6 +921,20 @@
     </div>
 
     <!-- VIEW: TERMOS DE USO -->
+    <div id="viewAdmin" class="view-section">
+      <div class="container" style="padding-top: 24px; padding-bottom: 60px;">
+        <button class="btn btn-outline" onclick="goBack('home')" style="margin-bottom: 20px;">← Voltar</button>
+        <h2 style="margin: 0 0 6px; color: var(--white);">Painel de denúncias</h2>
+        <p id="adminSummary" style="color: var(--muted); margin: 0 0 18px;"></p>
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+          <button type="button" class="tag-chip selected" id="adminTabOpen" onclick="setAdminTab('open')">Abertas</button>
+          <button type="button" class="tag-chip" id="adminTabResolved" onclick="setAdminTab('resolved')">Resolvidas</button>
+          <button type="button" class="btn btn-outline" style="margin-left: auto; padding: 7px 14px; font-size: .82rem;" onclick="loadAdminReports()">Atualizar</button>
+        </div>
+        <div id="adminReportList" style="display: grid; gap: 12px; max-width: 900px;"></div>
+      </div>
+    </div>
+
     <div id="viewTerms" class="view-section">
       <div class="container" style="padding-top: 24px;">
         <button class="btn btn-outline" onclick="goBack('home')">← Voltar</button>
@@ -1078,7 +1100,7 @@
           <ul>
             <li><strong>Conta:</strong> nome ou nome do projeto, e-mail e senha. A senha é gerenciada pelo serviço de autenticação do Google (Firebase), e não temos acesso a ela em texto.</li>
             <li><strong>Perfil (opcional):</strong> foto, bio, telefone/WhatsApp, e-mail de contato e até 3 links.</li>
-            <li><strong>Publicações:</strong> título, descrição, categoria, preço, fotos, links e demais conteúdos que você enviar.</li>
+            <li><strong>Publicações:</strong> título, descrição, categoria, fotos, links e demais conteúdos que você enviar.</li>
             <li><strong>Aceite dos Termos:</strong> a versão que você aceitou e a data do aceite.</li>
             <li><strong>Dados técnicos:</strong> o Google pode registrar informações como endereço IP e dados do aparelho, para segurança e funcionamento.</li>
           </ul>
@@ -1947,7 +1969,6 @@
               <div class="mock-author">
                 <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" class="mock-author-img">
                 <span>Clara Mendes</span>
-                <span style="margin-left:auto; font-weight:800; color:var(--white);">R$ 140</span>
               </div>
             </div>
           </article>
@@ -1961,7 +1982,6 @@
         ? `<img src="${imgSrc(featuredItem.userAvatar)}" class="mock-author-img" alt="${esc(featuredItem.userName)}">`
         : `<div class="mock-author-img" style="background:var(--white); color:var(--bg); font-size:.65rem; font-weight:800; display:grid; place-items:center;">${esc((featuredItem.userName || 'C').charAt(0))}</div>`;
 
-      const priceText = Number(featuredItem.price) ? `R$ ${Number(featuredItem.price).toLocaleString('pt-BR')}` : 'Sob Consulta';
 
       heroContainer.innerHTML = `
         <article class="mock-card" onclick="openDetail('${idAttr(featuredItem.id)}')" style="cursor: pointer;">
@@ -1973,7 +1993,6 @@
             <div class="mock-author">
               ${avatarHTML}
               <span>${esc(featuredItem.userName || 'Criador')}</span>
-              <span style="margin-left:auto; font-weight:800; color:var(--white);">${priceText}</span>
             </div>
           </div>
         </article>
@@ -2070,6 +2089,7 @@
       }
       if(viewName === 'detail') document.getElementById('viewDetail').classList.add('active');
       if(viewName === 'publicProfile') document.getElementById('viewPublicProfile').classList.add('active');
+      if(viewName === 'admin') { document.getElementById('viewAdmin').classList.add('active'); loadAdminReports(); }
       if(viewName === 'terms') document.getElementById('viewTerms').classList.add('active');
       if(viewName === 'privacy') document.getElementById('viewPrivacy').classList.add('active');
       if(viewName === 'privacyVisitors') document.getElementById('viewPrivacyVisitors').classList.add('active');
@@ -2102,7 +2122,6 @@
       document.getElementById('detailTitle').textContent = item.title;
       rteRenderDescription(document.getElementById('detailDescription'), item);
       document.getElementById('detailCategory').textContent = item.category;
-      document.getElementById('detailPrice').textContent = Number(item.price) ? 'R$ ' + Number(item.price).toLocaleString('pt-BR') : 'Sob Consulta';
       
       document.getElementById('sellerName').textContent = item.userName || 'Criador';
       document.getElementById('sellerAvatarContainer').innerHTML = renderAvatarHTML(item.userAvatar, item.userName, 'seller-avatar');
@@ -2283,6 +2302,7 @@
         guestDiv.style.display = 'none';
         userDiv.style.display = 'block';
         document.getElementById('userName').textContent = currentUser.name;
+        document.getElementById('adminMenuItem').style.display = isAdmin() ? 'block' : 'none';
         document.getElementById('userAvatarContainer').innerHTML = renderAvatarHTML(currentUser.avatar, currentUser.name, 'avatar-img');
       } else {
         currentUser = null;
@@ -2508,7 +2528,6 @@
             <div class="listing-author">
               ${avatarSrc ? `<img src="${avatarSrc}" alt="">` : `<div class="listing-author-placeholder">${esc((item.userName||'C').charAt(0))}</div>`}
               <span>${esc(item.userName || 'Criador')}</span>
-              <span class="listing-price-tag">${Number(item.price) ? 'R$ ' + Number(item.price).toLocaleString('pt-BR') : 'Consulta'}</span>
             </div>
           </div>
         </article>
@@ -2562,7 +2581,6 @@
       const newItem = {
         title: document.getElementById('pubTitle').value,
         category: document.getElementById('pubCategory').value,
-        price: Number(document.getElementById('pubPrice').value) || 0,
         description: desc.plain,
         descriptionHtml: desc.html,
         photos: selectedFormPhotos.length ? selectedFormPhotos : ['https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80'],
@@ -2646,7 +2664,6 @@
       editingListingId = id;
       document.getElementById('pubTitle').value = item.title || '';
       document.getElementById('pubCategory').value = item.category || '';
-      document.getElementById('pubPrice').value = item.price || '';
       rteSetHTML(item.descriptionHtml ? sanitizeRichHTML(item.descriptionHtml) : plainToRichHTML(item.description));
       selectedFormPhotos = Array.isArray(item.photos) && item.photos[0] ? [item.photos[0]] : [];
       renderPhotoPreviews();
@@ -2661,7 +2678,6 @@
       const changes = {
         title: document.getElementById('pubTitle').value,
         category: document.getElementById('pubCategory').value,
-        price: Number(document.getElementById('pubPrice').value) || 0,
         description: desc.plain,
         descriptionHtml: desc.html,
         photos: selectedFormPhotos.length ? selectedFormPhotos : ['https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80'],
@@ -2823,6 +2839,115 @@
       } finally {
         btn.disabled = false;
       }
+    }
+
+    // ===== Painel de denúncias (só para administradores) =====
+    // Cole aqui o UID da sua conta (Firebase > Authentication > Usuários > coluna "UID do usuário").
+    // O mesmo UID deve estar nas regras do Firestore.
+    const ADMIN_UIDS = ['COLE_AQUI_O_UID_DO_ADMIN'];
+    function isAdmin() { return !!(currentUser && currentUser.uid && ADMIN_UIDS.includes(currentUser.uid)); }
+
+    let adminReports = [];
+    let adminTab = 'open';
+
+    function setAdminTab(tab) {
+      adminTab = tab;
+      document.getElementById('adminTabOpen').classList.toggle('selected', tab === 'open');
+      document.getElementById('adminTabResolved').classList.toggle('selected', tab === 'resolved');
+      renderAdminReports();
+    }
+
+    async function loadAdminReports() {
+      const list = document.getElementById('adminReportList');
+      if (!isAdmin()) { list.textContent = 'Acesso restrito.'; return; }
+      list.textContent = 'Carregando...';
+      try {
+        const M = window.fbModules;
+        const snap = await M.getDocs(M.query(M.collection(window.fbDb, 'reports'), M.orderBy('createdAt', 'desc')));
+        adminReports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderAdminReports();
+      } catch (err) {
+        console.error('Erro ao ler denúncias:', err);
+        list.textContent = 'Não foi possível carregar as denúncias. Confira se o UID do admin está nas regras do Firestore.';
+      }
+    }
+
+    function renderAdminReports() {
+      const list = document.getElementById('adminReportList');
+      const open = adminReports.filter(r => r.status !== 'resolved');
+      const done = adminReports.filter(r => r.status === 'resolved');
+      document.getElementById('adminSummary').textContent = open.length + ' aberta(s) · ' + done.length + ' resolvida(s)';
+      const shown = adminTab === 'open' ? open : done;
+      list.textContent = '';
+      if (!shown.length) {
+        const p = document.createElement('p');
+        p.style.color = 'var(--muted)';
+        p.textContent = adminTab === 'open' ? 'Nenhuma denúncia aberta.' : 'Nenhuma denúncia resolvida.';
+        list.appendChild(p);
+        return;
+      }
+      shown.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'rep-item' + (r.status === 'resolved' ? ' resolved' : '');
+        const top = document.createElement('div');
+        top.className = 'rep-top';
+        const reason = document.createElement('span');
+        reason.className = 'rep-reason';
+        reason.textContent = r.reason || 'Sem motivo';
+        const title = document.createElement('strong');
+        title.style.color = 'var(--white)';
+        title.textContent = r.listingTitle || '(sem título)';
+        top.append(reason, title);
+        const meta = document.createElement('div');
+        meta.className = 'rep-meta';
+        const when = r.createdAt && r.createdAt.toDate ? r.createdAt.toDate().toLocaleString('pt-BR') : '';
+        meta.textContent = [when, r.reporterEmail ? 'Contato: ' + r.reporterEmail : 'Sem e-mail de retorno', r.reporterUid ? 'Usuário logado' : 'Visitante'].filter(Boolean).join(' · ');
+        card.append(top, meta);
+        if (r.details) {
+          const d = document.createElement('p');
+          d.style.cssText = 'margin: 0; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere;';
+          d.textContent = r.details;
+          card.appendChild(d);
+        }
+        const actions = document.createElement('div');
+        actions.className = 'rep-actions';
+        const exists = listings.some(l => l.id === r.listingId);
+        if (exists) actions.appendChild(adminBtn('Ver publicação', 'btn btn-outline', () => openDetail(r.listingId)));
+        actions.appendChild(adminBtn(r.status === 'resolved' ? 'Reabrir' : 'Marcar como resolvida', 'btn btn-outline', () => setReportStatus(r.id, r.status === 'resolved' ? 'open' : 'resolved')));
+        if (exists) actions.appendChild(adminBtn('Excluir publicação', 'btn btn-outline', () => adminDeleteListing(r)));
+        card.appendChild(actions);
+        list.appendChild(card);
+      });
+    }
+
+    function adminBtn(text, cls, fn) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = cls; b.textContent = text; b.onclick = fn;
+      return b;
+    }
+
+    async function setReportStatus(id, status) {
+      try {
+        const M = window.fbModules;
+        await M.updateDoc(M.doc(window.fbDb, 'reports', id), { status });
+        const r = adminReports.find(x => x.id === id);
+        if (r) r.status = status;
+        renderAdminReports();
+      } catch (err) { console.error(err); showToast(firebaseErrorMessage(err, 'atualizar a denúncia')); }
+    }
+
+    async function adminDeleteListing(r) {
+      if (!confirm('Excluir esta publicação para todos? Isso não pode ser desfeito.')) return;
+      try {
+        const M = window.fbModules;
+        await M.deleteDoc(M.doc(window.fbDb, 'listings', r.listingId));
+        await M.updateDoc(M.doc(window.fbDb, 'reports', r.id), { status: 'resolved' });
+        r.status = 'resolved';
+        listings = listings.filter(l => l.id !== r.listingId);
+        renderListings(listings);
+        renderAdminReports();
+        showToast('Publicação excluída e denúncia resolvida.');
+      } catch (err) { console.error(err); showToast(firebaseErrorMessage(err, 'excluir a publicação')); }
     }
 
     // ===== Baixar meus dados =====
