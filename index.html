@@ -501,6 +501,7 @@
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: .82rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
     .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; outline: 0; background: var(--bg); color: var(--white); font-size: .9rem; }
+    textarea.autogrow { resize: none; overflow: hidden; min-height: 92px; box-sizing: border-box; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--white); }
 
     footer { background: var(--footer-bg); border-top: 1px solid var(--line); padding: 36px 0 20px; margin-top: 40px; }
@@ -829,7 +830,7 @@
 
               <div class="form-group">
                 <label>Bio / Apresentação</label>
-                <textarea id="editBio" rows="3" placeholder="Escreva um breve resumo sobre você ou seu projeto..."></textarea>
+                <textarea id="editBio" class="autogrow" rows="3" placeholder="Escreva um breve resumo sobre você ou seu projeto..."></textarea>
               </div>
 
               <div class="form-group">
@@ -1185,7 +1186,7 @@
         </div>
         <div class="form-group">
           <label for="reportDetails">Detalhes <span style="color: var(--muted); font-weight: normal;">(opcional)</span></label>
-          <textarea id="reportDetails" rows="3" maxlength="500" placeholder="Explique o que está errado (máx. 500 caracteres)"></textarea>
+          <textarea id="reportDetails" class="autogrow" rows="3" maxlength="500" placeholder="Explique o que está errado (máx. 500 caracteres)"></textarea>
         </div>
         <div class="form-group">
           <label for="reportEmail">Seu e-mail para retorno <span style="color: var(--muted); font-weight: normal;">(opcional)</span></label>
@@ -2331,7 +2332,7 @@
       document.getElementById('profileEmailDisplay').textContent = currentUser.email;
       document.getElementById('profileAvatarBig').innerHTML = renderAvatarHTML(currentUser.avatar, currentUser.name, 'creator-avatar');
 
-      document.getElementById('editBio').value = currentUser.bio || '';
+      document.getElementById('editBio').value = currentUser.bio || ''; setTimeout(() => resetAutoGrow('editBio'), 0);
       document.getElementById('editPhone').value = currentUser.phone || '';
       document.getElementById('editContactEmail').value = currentUser.contactEmail || currentUser.email || '';
       const myLinks = Array.isArray(currentUser.links) ? currentUser.links : [];
@@ -2725,7 +2726,7 @@
       reportingListingId = listingId;
       document.getElementById('reportSubject').textContent = 'Publicação: ' + (item.title || '');
       document.getElementById('reportReason').value = '';
-      document.getElementById('reportDetails').value = '';
+      document.getElementById('reportDetails').value = ''; resetAutoGrow('reportDetails');
       document.getElementById('reportEmail').value = (currentUser && currentUser.email) || '';
       document.getElementById('reportModal').classList.add('show');
     }
@@ -2842,6 +2843,11 @@
         btn.disabled = false;
       }
     }
+
+    // Caixas de texto com tamanho fixo que crescem para baixo quando o texto passa do limite
+    function autoGrow(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; }
+    document.addEventListener('input', (e) => { if (e.target.classList && e.target.classList.contains('autogrow')) autoGrow(e.target); });
+    function resetAutoGrow(id) { const el = document.getElementById(id); if (el) { el.style.height = 'auto'; autoGrow(el); } }
 
     // ===== Contato do criador (lista com WhatsApp, e-mail e links) =====
     const CONTACT_ICONS = {
