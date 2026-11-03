@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#0A0A0A" id="metaTheme">
   <script>try{var t=localStorage.getItem('vitrineio_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700&family=Caveat:wght@700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
   <title>Vitrine io — Mural Editorial & Criadores Independentes</title>
   
   <!-- SDKs Oficiais do Firebase v10 (Módulos ES) -->
@@ -184,15 +186,6 @@
     a { color: inherit; text-decoration: none; }
     .container { width: min(1160px, calc(100% - 32px)); margin-inline: auto; }
     @media (min-width: 1200px) { .container { width: min(1560px, calc(100% - 96px)); } }
-    @media (min-width: 1200px) {
-      .carousel-track .listing-card { flex-basis: calc((100% - 80px) / 5); }
-      .listings { grid-template-columns: repeat(5, 1fr); }
-    }
-    @media (min-width: 1500px) {
-      .carousel-track .listing-card { flex-basis: calc((100% - 100px) / 6); }
-      .listings { grid-template-columns: repeat(6, 1fr); }
-      .creators-grid { grid-template-columns: repeat(4, 1fr); }
-    }
 
     /* ===== Proteção contra Cópia / Download de Imagens ===== */
     img {
@@ -342,18 +335,30 @@
     .cat-arrows { display: flex; gap: 8px; }
     .cat-arrow { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--white); cursor: pointer; display: grid; place-items: center; transition: border-color .15s, background .15s; }
     .cat-arrow:hover { border-color: var(--white); background: var(--bg); }
-    .carousel-track { display: flex; gap: 20px; width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding-bottom: 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .carousel-track { display: flex; gap: 20px; width: 100%; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; padding: 22px 0 28px; margin: -22px 0 -22px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .carousel-track::-webkit-scrollbar { display: none; }
-    .carousel-track .listing-card { flex: 0 0 calc((100% - 60px) / 4); scroll-snap-align: start; }
+    .carousel-track > .lc-wrap { flex: 0 0 calc((100% - 60px) / 4); scroll-snap-align: start; }
     @media (max-width: 900px) {
-      .carousel-track .listing-card { flex-basis: 46%; }
+      .carousel-track > .lc-wrap { flex-basis: 38%; }
       .cat-title { white-space: normal; }
     }
     @media (max-width: 680px) {
       .carousel-track { gap: 14px; }
-      .carousel-track .listing-card { flex-basis: 78%; }
+      .carousel-track > .lc-wrap { flex-basis: 62%; }
       .cat-arrows { display: none; }
       .cat-block { margin-bottom: 36px; }
+    }
+    @media (min-width: 1000px) {
+      .carousel-track > .lc-wrap { flex-basis: calc((100% - 80px) / 5); }
+    }
+    @media (min-width: 1200px) {
+      .carousel-track > .lc-wrap { flex-basis: calc((100% - 100px) / 6); }
+      .listings { grid-template-columns: repeat(5, 1fr); }
+    }
+    @media (min-width: 1500px) {
+      .carousel-track > .lc-wrap { flex-basis: calc((100% - 120px) / 7); }
+      .listings { grid-template-columns: repeat(6, 1fr); }
+      .creators-grid { grid-template-columns: repeat(4, 1fr); }
     }
     
     .listing-card { background: var(--surface-card); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; transition: transform .22s, border-color .22s; cursor: pointer; display: flex; flex-direction: column; }
@@ -411,6 +416,81 @@
     .rep-meta { color: var(--muted); font-size: .8rem; }
     .rep-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
     .rep-actions .btn { padding: 8px 14px; font-size: .82rem; }
+    .pubprof-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; grid-template-areas: "cards side"; gap: 28px; align-items: start; }
+    .pubprof-side { grid-area: side; position: sticky; top: 90px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 24px; }
+    .pubprof-main { grid-area: cards; min-width: 0; }
+    @media (max-width: 900px) {
+      .pubprof-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "side" "cards"; gap: 20px; }
+      .pubprof-side { position: static; }
+    }
+    #pubProfListings.compact-listings { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 14px; }
+    @media (max-width: 680px) { #pubProfListings.compact-listings { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }
+    .compact-listings .listing-card, .carousel-track .listing-card { border-radius: 14px; }
+    .compact-listings .listing-content, .carousel-track .listing-content { padding: 11px 12px; }
+    .compact-listings .listing-title, .carousel-track .listing-title { font-size: .88rem; margin: 2px 0 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .compact-listings .listing-author, .carousel-track .listing-author { padding-top: 8px; font-size: .74rem; }
+
+    /* ===== Card personalizado (só na página inicial) ===== */
+    .lc-wrap { --accent: #FFFFFF; --accent-ink: #0A0A0A; position: relative; display: flex; scroll-snap-align: start; min-width: 0; }
+    .lc-wrap > .listing-card { flex: 1; min-width: 0; position: relative; z-index: 1; }
+    .carousel-track .listing-title { height: 2.4rem; line-height: 1.25; margin: 0 0 8px; }
+    .carousel-track .listing-content { padding: 11px 12px 12px; }
+    .carousel-track .listing-author { margin-top: 0; }
+    .lc-wrap[data-border="thin"] > .listing-card { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .lc-wrap[data-border="thick"] > .listing-card { border-color: var(--accent); box-shadow: inset 0 0 0 4px var(--accent); }
+    .lc-wrap[data-border="dashed"] > .listing-card { border-color: transparent; outline: 2px dashed var(--accent); outline-offset: -2px; }
+    .lc-wrap[data-border="glow"] > .listing-card { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent), 0 8px 28px color-mix(in srgb, var(--accent) 40%, transparent); }
+    .lc-wrap[data-pattern="dots"] .listing-content { background-image: radial-gradient(color-mix(in srgb, var(--accent) 32%, transparent) 1.3px, transparent 1.4px); background-size: 12px 12px; }
+    .lc-wrap[data-pattern="stripes"] .listing-content { background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent) 0 6px, transparent 6px 14px); }
+    .lc-wrap[data-pattern="grid"] .listing-content { background-image: linear-gradient(color-mix(in srgb, var(--accent) 16%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, transparent) 1px, transparent 1px); background-size: 16px 16px; }
+    .lc-wrap[data-photo="rounded"] .listing-image { padding: 10px; background: transparent; }
+    .lc-wrap[data-photo="rounded"] .listing-image img { border-radius: 18px; }
+    .lc-wrap[data-photo="round"] .listing-image { padding: 16px; background: transparent; }
+    .lc-wrap[data-photo="round"] .listing-image img { border-radius: 50%; border: 3px solid var(--accent); }
+    .lc-wrap[data-font="serif"] .listing-title { font-family: Fraunces, Georgia, serif; font-size: .92rem; line-height: 1.2; }
+    .lc-wrap[data-font="hand"] .listing-title { font-family: Caveat, "Segoe Print", cursive; font-size: 1.15rem; line-height: 1.05; }
+    .lc-wrap[data-font="mono"] .listing-title { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .78rem; line-height: 1.35; }
+    .lc-badge { position: absolute; left: 10px; bottom: 10px; background: var(--accent); color: var(--accent-ink); font-size: .68rem; font-weight: 800; padding: 4px 9px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0,0,0,.35); z-index: 2; }
+    .lc-sticker { position: absolute; z-index: 3; color: var(--accent); filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); pointer-events: none; border-radius: 50%; background: color-mix(in srgb, var(--surface-card) 86%, transparent); }
+    .lc-sticker svg { position: absolute; inset: 18%; width: 64%; height: 64%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .lc-sticker svg .fill { fill: currentColor; stroke: none; }
+    .lc-sticker.s-sm { width: 30px; height: 30px; } .lc-sticker.s-md { width: 40px; height: 40px; } .lc-sticker.s-lg { width: 54px; height: 54px; }
+    .lc-pos-tr { top: 8px; right: 8px; } .lc-pos-tl { top: 8px; left: 8px; } .lc-pos-br { bottom: 8px; right: 8px; }
+    .lc-ears { position: absolute; top: -17px; left: 0; right: 0; height: 30px; pointer-events: none; z-index: 0; }
+    .lc-ears i { position: absolute; top: 0; width: 44px; height: 32px; background: var(--accent); clip-path: polygon(0 100%, 12% 0, 100% 100%); }
+    .lc-ears i::after { content: ""; position: absolute; left: 20%; top: 34%; width: 34%; height: 55%; background: color-mix(in srgb, var(--accent) 45%, #ffb3c7); clip-path: polygon(0 100%, 12% 0, 100% 100%); }
+    .lc-ears i:first-child { left: 14px; }
+    .lc-ears i:last-child { right: 14px; transform: scaleX(-1); }
+    .lc-paws { margin-left: auto; display: flex; gap: 6px; color: var(--accent); }
+    .lc-paws svg { width: 12px; height: 12px; fill: currentColor; }
+    .lc-paws svg:nth-child(even) { transform: rotate(14deg) translateY(2px); }
+    .lc-paws svg:nth-child(odd) { transform: rotate(-12deg); }
+
+    /* ===== Popups de edição ===== */
+    .modal-card.xl { width: min(960px, 100%); max-height: 92vh; overflow: auto; }
+    .choice-grid { display: grid; gap: 12px; margin-top: 16px; }
+    .choice-btn { text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--white); border-radius: 14px; padding: 16px 18px; cursor: pointer; font: inherit; transition: border-color .15s, transform .15s; }
+    .choice-btn:hover, .choice-btn:focus-visible { border-color: var(--white); transform: translateY(-1px); }
+    .choice-btn strong { display: block; font-size: 1rem; margin-bottom: 4px; }
+    .choice-btn span { color: var(--muted); font-size: .85rem; }
+    .cs-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; align-items: start; margin-top: 14px; }
+    .cs-preview { position: sticky; top: 0; padding-top: 22px; }
+    .cs-preview .lc-wrap { width: 100%; }
+    .cs-group { margin-bottom: 18px; }
+    .cs-group > .lbl { display: block; font-size: .82rem; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .cs-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cs-sw { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+    .cs-sw[aria-pressed="true"] { outline: 2px solid var(--white); outline-offset: 2px; }
+    .cs-opt { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 999px; padding: 7px 12px; font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer; }
+    .cs-opt:hover { border-color: var(--white); }
+    .cs-opt[aria-pressed="true"] { background: var(--white); color: var(--bg); border-color: var(--white); }
+    .cs-stk { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--text); display: grid; place-items: center; cursor: pointer; padding: 0; font-weight: 700; }
+    .cs-stk svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .cs-stk svg .fill { fill: currentColor; stroke: none; }
+    .cs-stk[aria-pressed="true"] { background: var(--white); color: var(--bg); border-color: var(--white); }
+    .cs-toggle { display: flex; align-items: center; gap: 10px; font-size: .85rem; cursor: pointer; margin-bottom: 8px; }
+    .cs-toggle input { width: 18px; height: 18px; accent-color: var(--white); }
+    @media (max-width: 760px) { .cs-layout { grid-template-columns: 1fr; } .cs-preview { position: static; max-width: 240px; margin: 0 auto; } }
     .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
     .tag-chip { border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 999px; padding: 7px 13px; font-size: .82rem; font-weight: 600; cursor: pointer; transition: all .15s; }
     .tag-chip:hover { border-color: var(--white); }
@@ -721,21 +801,20 @@
     <div id="viewPublicProfile" class="view-section">
       <div class="container" style="padding-top: 24px;">
         <button class="btn btn-outline" onclick="goBack('creators')" style="margin-bottom: 20px;">← Voltar</button>
-        <div style="background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 32px; margin-bottom: 32px;">
-          <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+        <div class="pubprof-layout">
+          <aside class="pubprof-side">
             <div id="pubProfAvatar"></div>
-            <div>
-              <h2 id="pubProfName" style="margin: 0; font-size: 1.8rem; color: var(--white);">Nome do Criador</h2>
-              <p id="pubProfBio" style="color: var(--muted); margin: 8px 0; max-width: 600px;"></p>
-              <div id="pubProfTags" class="tag-pills"></div>
-              <div id="pubProfContacts" style="display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; font-size: .88rem; color: var(--text);"></div>
-              <div id="pubProfLinks" class="profile-links"></div>
-            </div>
-          </div>
+            <h2 id="pubProfName" style="margin: 14px 0 0; font-size: 1.5rem; color: var(--white);">Nome do Criador</h2>
+            <p id="pubProfBio" style="color: var(--muted); margin: 8px 0 0; overflow-wrap: anywhere;"></p>
+            <div id="pubProfTags" class="tag-pills"></div>
+            <div id="pubProfContacts" style="margin-top: 16px; font-size: .88rem; color: var(--text);"></div>
+            <div id="pubProfLinks" class="profile-links"></div>
+          </aside>
+          <section class="pubprof-main">
+            <h3 style="margin: 0 0 16px;">Projetos e Exposições deste Criador</h3>
+            <div id="pubProfListings" class="listings compact-listings"></div>
+          </section>
         </div>
-
-        <h3>Projetos e Exposições deste Criador</h3>
-        <div id="pubProfListings" class="listings" style="margin-top: 20px;"></div>
       </div>
     </div>
 
@@ -1217,6 +1296,53 @@
       <p id="contactModalSubtitle" style="color: var(--muted); font-size: .88rem; margin: 0;"></p>
       <div class="tag-pills" id="contactTags"></div>
       <div class="contact-list" id="contactList"></div>
+    </div>
+  </div>
+
+  <!-- MODAL ESCOLHA DE EDIÇÃO -->
+  <div class="modal-overlay" id="editChoiceModal" role="dialog" aria-modal="true" aria-labelledby="editChoiceTitle" onclick="if(event.target===this) closeEditChoice()">
+    <div class="modal-card wide">
+      <button type="button" class="modal-close" aria-label="Fechar" onclick="closeEditChoice()">✕</button>
+      <h3 id="editChoiceTitle" style="margin: 0 0 4px; color: var(--white);">O que você quer editar?</h3>
+      <p id="editChoiceSubject" style="color: var(--muted); font-size: .88rem; margin: 0;"></p>
+      <div class="choice-grid">
+        <button type="button" class="choice-btn" onclick="chooseEditPublication()"><strong>Editar publicação</strong><span>Título, descrição, categoria e foto.</span></button>
+        <button type="button" class="choice-btn" onclick="chooseCustomizeCard()"><strong>Customizar card</strong><span>Cores, borda, adesivos e mais. Aparece na página inicial.</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CUSTOMIZAR CARD -->
+  <div class="modal-overlay" id="cardStyleModal" role="dialog" aria-modal="true" aria-labelledby="csTitle" onclick="if(event.target===this) closeCardStyleModal()">
+    <div class="modal-card xl">
+      <button type="button" class="modal-close" aria-label="Fechar" onclick="closeCardStyleModal()">✕</button>
+      <h3 id="csTitle" style="margin: 0 0 4px; color: var(--white);">Customizar card</h3>
+      <p style="color: var(--muted); font-size: .88rem; margin: 0;">Vale só para este card e aparece na página inicial. Todos os cards continuam do mesmo tamanho.</p>
+      <div class="cs-layout">
+        <div class="cs-preview" id="csPreview"></div>
+        <div id="csControls">
+          <div class="cs-group"><span class="lbl">Estilos prontos</span><div class="cs-row" id="csPresets"></div></div>
+          <div class="cs-group"><span class="lbl">Cor de destaque</span><div class="cs-row" id="csSwatches"></div></div>
+          <div class="cs-group"><span class="lbl">Borda</span><div class="cs-row" id="csBorders"></div></div>
+          <div class="cs-group"><span class="lbl">Fundo da parte de baixo</span><div class="cs-row" id="csPatterns"></div></div>
+          <div class="cs-group"><span class="lbl">Formato da foto</span><div class="cs-row" id="csPhotos"></div></div>
+          <div class="cs-group"><span class="lbl">Fonte do título</span><div class="cs-row" id="csFonts"></div></div>
+          <div class="cs-group"><span class="lbl">Adesivo</span><div class="cs-row" id="csStickers"></div>
+            <div class="cs-row" style="margin-top: 10px;" id="csPos"></div>
+            <div class="cs-row" style="margin-top: 8px;" id="csSize"></div></div>
+          <div class="cs-group"><span class="lbl">Selo na foto</span><div class="cs-row" id="csBadges"></div></div>
+          <div class="cs-group"><span class="lbl">Extras de gatinho</span>
+            <label class="cs-toggle"><input type="checkbox" id="csEars"> Orelhinhas no topo do card</label>
+            <label class="cs-toggle"><input type="checkbox" id="csPaws"> Patinhas na parte de baixo</label></div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; position: sticky; bottom: -28px; background: var(--surface); padding: 14px 0 4px; border-top: 1px solid var(--line);">
+        <button type="button" class="btn btn-outline" onclick="resetCardStyle()">Restaurar padrão</button>
+        <button type="button" class="btn btn-outline" onclick="applyCardStyleToAll()">Aplicar a todos os meus cards</button>
+        <span style="flex: 1;"></span>
+        <button type="button" class="btn btn-outline" onclick="closeCardStyleModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="csSaveBtn" onclick="saveCardStyle()">Salvar alterações</button>
+      </div>
     </div>
   </div>
 
@@ -1846,6 +1972,7 @@
             item.userName = u.name || item.userName;
             item.userAvatar = u.avatar || '';
             item.userBio = u.bio || item.userBio || '';
+            item.userCardStyle = cleanCardStyle(u.cardStyle);
           }
           if (!String(item.id).startsWith('mock_')) {
             const leaked = item.userPhone !== undefined || item.userContactEmail !== undefined;
@@ -2436,7 +2563,7 @@
               <button type="button" class="icon-btn danger" aria-label="Excluir publicação" title="Excluir" onclick="askDeleteListing('${idAttr(item.id)}')">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
               </button>
-              <button type="button" class="icon-btn" aria-label="Editar publicação" title="Editar" onclick="startEditListing('${idAttr(item.id)}')">
+              <button type="button" class="icon-btn" aria-label="Editar" title="Editar" onclick="openEditChoice('${idAttr(item.id)}')">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
               </button>
             </div>
@@ -2507,7 +2634,7 @@
       if (creatorItems.length === 0) {
         listingsDiv.innerHTML = '<p style="color:var(--muted);">Nenhum projeto publicado ainda.</p>';
       } else {
-        listingsDiv.innerHTML = creatorItems.map(listingCardHTML).join('');
+        listingsDiv.innerHTML = creatorItems.map(i => listingCardHTML(i)).join('');
       }
 
       navigateTo('publicProfile');
@@ -2515,23 +2642,34 @@
 
     const CATEGORY_ORDER = CATEGORIES.map(c => c.name);
 
-    function listingCardHTML(item) {
+    function listingCardHTML(item, home) {
       const coverPhoto = imgSrc(item.photos && item.photos[0]) || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=700&q=80';
       const avatarSrc = imgSrc(item.userAvatar);
-      return `
+      const st = home ? resolveCardStyle(item) : null;
+      const badge = st && st.badge !== 'none' ? `<span class="lc-badge">${esc(st.badge)}</span>` : '';
+      const sticker = st && st.sticker !== 'none' ? `<span class="lc-sticker s-${st.size} lc-pos-${st.pos}"><svg viewBox="0 0 24 24" aria-hidden="true">${CARD_ICONS[st.sticker]}</svg></span>` : '';
+      const paw = '<svg viewBox="0 0 24 24" aria-hidden="true">' + CARD_ICONS.paw.replace(/class="fill"/g, '') + '</svg>';
+      const paws = st && st.paws ? `<span class="lc-paws">${paw}${paw}${paw}</span>` : '';
+      const card = `
         <article class="listing-card" onclick="openDetail('${idAttr(item.id)}')">
           <div class="listing-image">
             <img src="${coverPhoto}" alt="${esc(item.title)}">
+            ${sticker}${badge}
           </div>
           <div class="listing-content">
             <h3 class="listing-title">${esc(item.title)}</h3>
             <div class="listing-author">
               ${avatarSrc ? `<img src="${avatarSrc}" alt="">` : `<div class="listing-author-placeholder">${esc((item.userName||'C').charAt(0))}</div>`}
               <span>${esc(item.userName || 'Criador')}</span>
+              ${paws}
             </div>
           </div>
         </article>
       `;
+      if (!home) return card;
+      const attrs = st ? ` style="--accent:${st.accent};--accent-ink:${cardInk(st.accent)}" data-border="${st.border}" data-pattern="${st.pattern}" data-photo="${st.photo}" data-font="${st.font}"` : '';
+      const ears = st && st.ears ? '<div class="lc-ears"><i></i><i></i></div>' : '';
+      return `<div class="lc-wrap"${attrs}>${ears}${card}</div>`;
     }
 
     function renderListings(itemsToRender = listings) {
@@ -2554,7 +2692,7 @@
                 <button type="button" class="cat-arrow" aria-label="Próximo" onclick="scrollCategory(this, 1)">❯</button>
               </div>
             </div>
-            <div class="carousel-track">${items.map(listingCardHTML).join('')}</div>
+            <div class="carousel-track">${items.map(i => listingCardHTML(i, true)).join('')}</div>
           </section>
         `;
       }).join('');
@@ -2844,7 +2982,7 @@
     // ===== Painel de denúncias (só para administradores) =====
     // Cole aqui o UID da sua conta (Firebase > Authentication > Usuários > coluna "UID do usuário").
     // O mesmo UID deve estar nas regras do Firestore.
-    const ADMIN_UIDS = ['Eh19DxUcHkdPmTiGzwajGK78nL43'];
+    const ADMIN_UIDS = ['COLE_AQUI_O_UID_DO_ADMIN'];
     function isAdmin() { return !!(currentUser && currentUser.uid && ADMIN_UIDS.includes(currentUser.uid)); }
 
     let adminReports = [];
@@ -3031,6 +3169,172 @@
     function autoGrow(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 2 + 'px'; }
     document.addEventListener('input', (e) => { if (e.target.classList && e.target.classList.contains('autogrow')) autoGrow(e.target); });
     function resetAutoGrow(id) { const el = document.getElementById(id); if (el) { el.style.height = 'auto'; autoGrow(el); } }
+
+    // ===== Personalização de card (página inicial) =====
+    const CARD_COLORS = [['Branco','#FFFFFF'],['Rosa','#FF6B9A'],['Laranja','#FF8A3D'],['Amarelo','#FFD23F'],['Verde','#3DDC97'],['Azul','#4DA3FF'],['Roxo','#A57BFF'],['Vermelho','#FF4D4D']];
+    const CARD_BORDERS = [['none','Sem borda'],['thin','Fina'],['thick','Grossa'],['dashed','Tracejada'],['glow','Brilho']];
+    const CARD_PATTERNS = [['none','Liso'],['dots','Bolinhas'],['stripes','Listras'],['grid','Quadriculado']];
+    const CARD_PHOTOS = [['square','Quadrada'],['rounded','Arredondada'],['round','Redonda']];
+    const CARD_FONTS = [['modern','Moderna'],['serif','Clássica'],['hand','Manuscrita'],['mono','Máquina']];
+    const CARD_SIZES = [['sm','P'],['md','M'],['lg','G']];
+    const CARD_POS = [['tl','↖ Topo esq.'],['tr','↗ Topo dir.'],['br','↘ Baixo dir.']];
+    const CARD_BADGES = [['none','Nenhum'],['Novo','Novo'],['Aceita encomendas','Aceita encomendas'],['Miau!','Miau!']];
+    const CARD_ICONS = {
+      cat: '<path d="M4 4.5l3.6 3A8.2 8.2 0 0 1 12 6.6c1.6 0 3.1.4 4.4.9L20 4.5V13a8 8 0 0 1-16 0V4.5z"/><circle class="fill" cx="9" cy="12" r="1.1"/><circle class="fill" cx="15" cy="12" r="1.1"/><path d="M11 15l1 1 1-1z" class="fill"/><path d="M12 16v1.3M9.6 17.2c.8.6 1.6.6 2.4 0 .8.6 1.6.6 2.4 0"/><path d="M2.5 13.5H6M2.8 15.8l3.2-.8M21.5 13.5H18M21.2 15.8L18 15"/>',
+      sleep: '<path d="M3 18c0-4.6 3.6-8 8.2-8 3.2 0 5.8 1.4 7.2 3.6 1.4.2 2.6 1.3 2.6 2.7 0 1.2-.9 1.7-2 1.7H3z"/><path d="M5.4 11.2L4.6 7.6l3 1.8M10 10.3l.2-3.8 2.6 2.2"/><path d="M8.2 14.2c.6.5 1.2.5 1.8 0M12.6 14.2c.6.5 1.2.5 1.8 0"/>',
+      paw: '<ellipse class="fill" cx="12" cy="16" rx="4.6" ry="3.8"/><ellipse class="fill" cx="5.6" cy="11.2" rx="1.9" ry="2.5"/><ellipse class="fill" cx="9.6" cy="6.8" rx="1.9" ry="2.6"/><ellipse class="fill" cx="14.4" cy="6.8" rx="1.9" ry="2.6"/><ellipse class="fill" cx="18.4" cy="11.2" rx="1.9" ry="2.5"/>',
+      fish: '<path d="M3 12c3-4.5 7-5.5 11-3.5L19 6v12l-5-2.5C10 17.5 6 16.5 3 12z"/><circle class="fill" cx="8" cy="11" r=".9"/>',
+      yarn: '<circle cx="11" cy="12" r="7"/><path d="M5.5 9c4 1 8 1 11 4M5 13c3.5.2 7 1.5 9 4.5M8 5.5c2.2 3 3.5 7 3 12M17.5 17c1.3.3 2.5 1.5 3 3"/>',
+      star: '<path d="M12 3.2l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.5l6-.8z"/>',
+      heart: '<path d="M12 20s-7.5-4.6-7.5-10A4.3 4.3 0 0 1 12 7.4 4.3 4.3 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>',
+      flower: '<circle class="fill" cx="12" cy="12" r="2.2"/><circle cx="12" cy="5.6" r="3"/><circle cx="12" cy="18.4" r="3"/><circle cx="5.6" cy="12" r="3"/><circle cx="18.4" cy="12" r="3"/>',
+      moon: '<path d="M20 14.5A8.2 8.2 0 0 1 9.5 4 8.2 8.2 0 1 0 20 14.5z"/>',
+      bolt: '<path d="M13 2.5L5 13.2h6l-1 8.3 8-10.7h-6z"/>'
+    };
+    const CARD_STICKER_NAMES = { cat: 'Gato', sleep: 'Gato dormindo', paw: 'Patinha', fish: 'Peixinho', yarn: 'Novelo', star: 'Estrela', heart: 'Coração', flower: 'Flor', moon: 'Lua', bolt: 'Raio' };
+    const CARD_PRESETS = {
+      gatinho: { name: 'Gatinho', accent: '#FF6B9A', border: 'thick', pattern: 'dots', photo: 'square', font: 'hand', sticker: 'cat', pos: 'tr', size: 'md', badge: 'Miau!', ears: true, paws: true },
+      minimal: { name: 'Minimalista', accent: '#FFFFFF', border: 'thin', pattern: 'none', photo: 'square', font: 'modern', sticker: 'none', pos: 'tr', size: 'md', badge: 'none', ears: false, paws: false },
+      neon: { name: 'Neon', accent: '#3DDC97', border: 'glow', pattern: 'grid', photo: 'rounded', font: 'mono', sticker: 'bolt', pos: 'tl', size: 'md', badge: 'Novo', ears: false, paws: false },
+      vintage: { name: 'Vintage', accent: '#FFD23F', border: 'dashed', pattern: 'stripes', photo: 'rounded', font: 'serif', sticker: 'flower', pos: 'br', size: 'lg', badge: 'Aceita encomendas', ears: false, paws: false },
+      noturno: { name: 'Noturno', accent: '#A57BFF', border: 'glow', pattern: 'dots', photo: 'round', font: 'serif', sticker: 'moon', pos: 'tl', size: 'md', badge: 'none', ears: false, paws: false }
+    };
+
+    // Aceita só valores das listas acima (nunca texto livre vindo do banco)
+    function cleanCardStyle(raw) {
+      if (!raw || typeof raw !== 'object') return null;
+      const pick = (v, list, d) => list.some(x => x[0] === v) ? v : d;
+      return {
+        accent: pick(raw.accent, CARD_COLORS.map(c => [c[1]]), '#FFFFFF'),
+        border: pick(raw.border, CARD_BORDERS, 'none'),
+        pattern: pick(raw.pattern, CARD_PATTERNS, 'none'),
+        photo: pick(raw.photo, CARD_PHOTOS, 'square'),
+        font: pick(raw.font, CARD_FONTS, 'modern'),
+        sticker: (raw.sticker === 'none' || Object.prototype.hasOwnProperty.call(CARD_ICONS, raw.sticker)) ? raw.sticker : 'none',
+        pos: pick(raw.pos, CARD_POS, 'tr'),
+        size: pick(raw.size, CARD_SIZES, 'md'),
+        badge: pick(raw.badge, CARD_BADGES, 'none'),
+        ears: raw.ears === true,
+        paws: raw.paws === true
+      };
+    }
+
+    // Estilo da própria publicação; sem ele, vale o estilo antigo do perfil (se houver)
+    function resolveCardStyle(item) {
+      if (item && Object.prototype.hasOwnProperty.call(item, 'cardStyle')) return cleanCardStyle(item.cardStyle);
+      return cleanCardStyle(item && item.userCardStyle);
+    }
+
+    function cardInk(hex) {
+      const n = parseInt(String(hex).slice(1), 16);
+      const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); });
+      return (.2126 * c[0] + .7152 * c[1] + .0722 * c[2]) > .45 ? '#0A0A0A' : '#FFFFFF';
+    }
+
+    let editChoiceId = null;
+    let csDraft = null;
+    let csSampleId = null;
+
+    function openEditChoice(id) {
+      const item = listings.find(l => l.id === id);
+      if (!item) return;
+      editChoiceId = id;
+      document.getElementById('editChoiceSubject').textContent = item.title || '';
+      document.getElementById('editChoiceModal').classList.add('show');
+    }
+    function closeEditChoice() { document.getElementById('editChoiceModal').classList.remove('show'); }
+    function chooseEditPublication() { const id = editChoiceId; closeEditChoice(); if (id) startEditListing(id); }
+    function chooseCustomizeCard() { const id = editChoiceId; closeEditChoice(); openCardStyleModal(id); }
+
+    function openCardStyleModal(sampleId) {
+      if (!currentUser) return;
+      csSampleId = sampleId;
+      const cur = listings.find(l => l.id === sampleId);
+      csDraft = (cur && resolveCardStyle(cur)) || { ...CARD_PRESETS.minimal, border: 'none' };
+      renderCardStyleModal();
+      document.getElementById('cardStyleModal').classList.add('show');
+    }
+    function closeCardStyleModal() { document.getElementById('cardStyleModal').classList.remove('show'); }
+
+    function csBtn(cls, text, on, fn, title) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = cls; b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      if (text != null) b.textContent = text;
+      if (title) { b.title = title; b.setAttribute('aria-label', title); }
+      b.onclick = fn; return b;
+    }
+    function csFill(id, items, key) {
+      const box = document.getElementById(id); box.textContent = '';
+      items.forEach(([v, label]) => box.appendChild(csBtn('cs-opt', label, csDraft[key] === v, () => { csDraft[key] = v; renderCardStyleModal(); })));
+    }
+
+    function renderCardStyleModal() {
+      const base = listings.find(l => l.id === csSampleId) || listings.find(l => l.userId === currentUser.uid) || { id: 'x', title: 'Título da sua publicação', photos: [], userName: currentUser.name, userAvatar: currentUser.avatar };
+      document.getElementById('csPreview').innerHTML = listingCardHTML({ ...base, id: 'preview', cardStyle: csDraft }, true).replace(/onclick="[^"]*"/, '');
+
+      const presets = document.getElementById('csPresets'); presets.textContent = '';
+      Object.values(CARD_PRESETS).forEach(pz => presets.appendChild(csBtn('cs-opt', pz.name, false, () => { const { name, ...rest } = pz; csDraft = { ...rest }; renderCardStyleModal(); })));
+
+      const sw = document.getElementById('csSwatches'); sw.textContent = '';
+      CARD_COLORS.forEach(([n, hex]) => { const b = csBtn('cs-sw', null, csDraft.accent === hex, () => { csDraft.accent = hex; renderCardStyleModal(); }, n); b.style.background = hex; sw.appendChild(b); });
+
+      csFill('csBorders', CARD_BORDERS, 'border'); csFill('csPatterns', CARD_PATTERNS, 'pattern'); csFill('csPhotos', CARD_PHOTOS, 'photo');
+      csFill('csFonts', CARD_FONTS, 'font'); csFill('csPos', CARD_POS, 'pos'); csFill('csSize', CARD_SIZES, 'size'); csFill('csBadges', CARD_BADGES, 'badge');
+
+      const st = document.getElementById('csStickers'); st.textContent = '';
+      st.appendChild(csBtn('cs-stk', '✕', csDraft.sticker === 'none', () => { csDraft.sticker = 'none'; renderCardStyleModal(); }, 'Sem adesivo'));
+      Object.keys(CARD_ICONS).forEach(k => {
+        const b = csBtn('cs-stk', null, csDraft.sticker === k, () => { csDraft.sticker = k; renderCardStyleModal(); }, CARD_STICKER_NAMES[k]);
+        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + CARD_ICONS[k] + '</svg>';
+        st.appendChild(b);
+      });
+      document.getElementById('csEars').checked = csDraft.ears;
+      document.getElementById('csPaws').checked = csDraft.paws;
+    }
+
+    document.addEventListener('change', (e) => {
+      if (!csDraft || !e.target) return;
+      if (e.target.id === 'csEars') { csDraft.ears = e.target.checked; renderCardStyleModal(); }
+      if (e.target.id === 'csPaws') { csDraft.paws = e.target.checked; renderCardStyleModal(); }
+    });
+
+    // Grava o estilo em uma ou mais publicações do próprio usuário
+    async function persistCardStyle(ids, style) {
+      const M = window.fbModules;
+      if (!currentUser || !currentUser.uid || !window.fbDb || !M) { showToast('Sem conexão com o servidor. Tente novamente.'); return false; }
+      const mine = ids.map(id => listings.find(l => l.id === id)).filter(l => l && l.userId === currentUser.uid);
+      if (!mine.length) { showToast('Publicação não encontrada.'); return false; }
+      try {
+        await Promise.all(mine.map(l => M.updateDoc(M.doc(window.fbDb, 'listings', l.id), { cardStyle: style })));
+        mine.forEach(l => { l.cardStyle = style; });
+        renderListings(listings);
+        return true;
+      } catch (err) {
+        console.error('Erro ao salvar o estilo do card:', err);
+        showToast(firebaseErrorMessage(err, 'salvar o estilo do card'));
+        return false;
+      }
+    }
+
+    async function saveCardStyle() {
+      const btn = document.getElementById('csSaveBtn');
+      btn.disabled = true;
+      const ok = await persistCardStyle([csSampleId], cleanCardStyle(csDraft));
+      btn.disabled = false;
+      if (ok) { closeCardStyleModal(); showToast('Estilo do card salvo!'); }
+    }
+
+    async function applyCardStyleToAll() {
+      const ids = listings.filter(l => l.userId === currentUser.uid).map(l => l.id);
+      if (ids.length > 1 && !confirm('Aplicar este estilo a todos os seus ' + ids.length + ' cards?')) return;
+      const ok = await persistCardStyle(ids, cleanCardStyle(csDraft));
+      if (ok) { closeCardStyleModal(); showToast('Estilo aplicado a todos os seus cards!'); }
+    }
+
+    async function resetCardStyle() {
+      const ok = await persistCardStyle([csSampleId], null);
+      if (ok) { closeCardStyleModal(); showToast('Card restaurado para o padrão.'); }
+    }
 
     // ===== Tags do perfil =====
     const PRESET_TAGS = ['50% adiantado', '100% adiantado', 'Paga na entrega', 'Aceita parcelar', 'Aceita PIX', 'Aceita encomendas', 'Encomendas fechadas', 'Orçamento grátis', 'Sob consulta', 'Faz envio', 'Só presencial', 'Atende online'];
@@ -3234,6 +3538,8 @@
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       closeContactModal();
+      closeEditChoice();
+      closeCardStyleModal();
       closeTagsModal();
       closeReportModal();
       closeDeleteAccountModal();
